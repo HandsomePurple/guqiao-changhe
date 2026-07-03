@@ -1,0 +1,2175 @@
+@import "tailwindcss";
+
+/* ═══ 汇文明朝体字体注册 ═══ */
+@font-face {
+  font-family: '汇文明朝体';
+  src: url('/汇文明朝体.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ═══ 桥文化 — 花间集新中式暖亮主题 ═══ */
+:root {
+  --bgPage: #E1D7EF;
+  --bgPanel: #F4EFE5;
+  --borderGold: #D3B885;
+  --navActive: #718A6F;
+  --textTitle: #363129;
+  --textSub: #716A6E;
+  --gold: #C49A6C;
+  --goldLight: #D3B885;
+  --daiqing: #3B4F5C;
+  --zhulv: #6B8E7A;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: '汇文明朝体', serif;
+  background-color: var(--bgPage);
+  color: var(--textTitle);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══ 旧 Leaflet 样式已移除，改用 Three.js 3D 地形 ═══ */
+
+/* ═══ 滚动条 — 金色细条 ═══ */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gold);
+  border-radius: 2px;
+}
+
+/* ═══ 品牌标题胶囊 — 花间集暖色风格 ═══ */
+.bridge-brand-capsule {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px 4px 5px;
+  border-radius: 24px;
+  background: rgba(244, 239, 229, 0.72);
+  border: 1px solid rgba(211, 184, 133, 0.28);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  pointer-events: none;
+}
+
+.bridge-brand-capsule .capsule-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(211, 184, 133, 0.15);
+  border: 1px solid rgba(211, 184, 133, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--gold);
+}
+
+.bridge-brand-capsule .capsule-text {
+  font-family: '汇文明朝体', serif;
+  font-size: 11px;
+  color: var(--textTitle);
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+/* ═══ 弹窗内品牌图标 — 暗化版（BridgeModal / 桥详情页）═══ */
+.modal-brand-capsule {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px 4px 5px;
+  border-radius: 24px;
+  background: rgba(244, 239, 229, 0.30);
+  border: 1px solid rgba(211, 184, 133, 0.12);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.modal-brand-capsule .capsule-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(211, 184, 133, 0.10);
+  border: 1px solid rgba(211, 184, 133, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--gold);
+  opacity: 0.55;
+}
+
+.modal-brand-capsule .capsule-text {
+  font-family: '汇文明朝体', serif;
+  font-size: 11px;
+  color: var(--textTitle);
+  letter-spacing: 2px;
+  white-space: nowrap;
+  opacity: 0.40;
+}
+
+/* ═══ 空状态/加载 ═══ */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(211, 184, 133, 0.2);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ═══ 弹窗遮罩动画 ═══ */
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalContentIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ═══ 金色脉冲光晕 ═══ */
+@keyframes goldPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(211, 184, 133, 0.12);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(211, 184, 133, 0.28);
+  }
+}
+
+/* ═══ 浮动光斑粒子 — 暖色版 ═══ */
+@keyframes ambientSpotFloat {
+  0%, 100% {
+    opacity: 0.08;
+    transform: translate(0, 0) scale(0.6);
+  }
+  12% {
+    opacity: 0.25;
+    transform: translate(4px, -6px) scale(0.78);
+  }
+  30% {
+    opacity: 0.65;
+    transform: translate(12px, -14px) scale(1.2);
+  }
+  50% {
+    opacity: 0.18;
+    transform: translate(-4px, 4px) scale(0.7);
+  }
+  65% {
+    opacity: 0.5;
+    transform: translate(-10px, 10px) scale(0.95);
+  }
+  80% {
+    opacity: 0.32;
+    transform: translate(6px, -2px) scale(0.85);
+  }
+}
+
+@keyframes ambientSpotGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 4px rgba(211, 184, 133, 0.2),
+      0 0 10px rgba(211, 184, 133, 0.08),
+      0 0 20px rgba(211, 184, 133, 0.03);
+  }
+  35% {
+    box-shadow:
+      0 0 10px rgba(211, 184, 133, 0.45),
+      0 0 24px rgba(211, 184, 133, 0.25),
+      0 0 44px rgba(211, 184, 133, 0.1);
+  }
+}
+
+/* ═══ 关闭按钮 — 暖色版 ═══ */
+.modal-close-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(244, 239, 229, 0.7);
+  border: 1px solid rgba(211, 184, 133, 0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 1001;
+  color: var(--gold);
+  font-size: 18px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.modal-close-btn:hover {
+  background: rgba(211, 184, 133, 0.18);
+  border-color: var(--gold);
+  color: #B8936E;
+  box-shadow: 0 0 12px rgba(211, 184, 133, 0.2);
+}
+
+/* ═══ 暖色全屏弹窗 ═══ */
+.modal-overlay-light {
+  position: fixed;
+  inset: 0;
+  background: rgba(225, 215, 239, 0.92);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* ═══ 信息标签 ═══ */
+.info-tag {
+  display: inline-block;
+  padding: 3px 12px;
+  background: rgba(211, 184, 133, 0.12);
+  border: 1px solid rgba(211, 184, 133, 0.25);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--textTitle);
+  font-family: '汇文明朝体', serif;
+}
+
+/* ═══ 文本区块标题 ═══ */
+.text-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: '汇文明朝体', serif;
+  letter-spacing: 2px;
+}
+
+.text-section-title::before {
+  content: '';
+  width: 4px;
+  height: 14px;
+  background: var(--gold);
+  border-radius: 2px;
+}
+
+/* ═══ 宣纸纹理叠加层 ═══ */
+.parchement-texture {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.04;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(180, 150, 110, 0.05) 2px, rgba(180, 150, 110, 0.05) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(180, 150, 110, 0.04) 2px, rgba(180, 150, 110, 0.04) 4px);
+}
+
+/* ═══ 3D 桥标记 — Three.js Html overlay ═══ */
+.bridge-3d-marker {
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bridge-3d-marker:hover {
+  transform: scale(1.15);
+  background: rgba(236,215,192,0.38) !important;
+  border-color: rgba(206,183,160,0.65) !important;
+  box-shadow: none !important;
+}
+
+/* 呼吸发光 */
+.bridge-3d-marker.glow-breathing {
+  animation: glowBreathe 2.8s ease-in-out infinite;
+}
+
+@keyframes glowBreathe {
+  0%, 100% {
+    box-shadow:
+      0 0 2px 2px rgba(255,235,180,0.50),
+      0 0 8px rgba(255,225,160,0.22);
+  }
+  50% {
+    box-shadow:
+      0 0 2px 2px rgba(255,235,180,0.78),
+      0 0 10px rgba(255,225,160,0.40);
+  }
+}
+
+/* ═══ 定位图标涟漪扩散 ═══ */
+.bridge-3d-pin {
+  position: relative;
+}
+
+.bridge-3d-pin::before,
+.bridge-3d-pin::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(138,163,160,0.40);
+  animation: pinRipple 2.6s ease-out infinite;
+  pointer-events: none;
+}
+
+.bridge-3d-pin::after {
+  animation-delay: 1.3s;
+}
+
+@keyframes pinRipple {
+  0% {
+    transform: scale(1);
+    opacity: 0.60;
+  }
+  100% {
+    transform: scale(2.0);
+    opacity: 0;
+  }
+}
+
+.bridge-3d-marker.selected {
+  animation: markerPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes markerPulse {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(140,115,90,0.14), inset 0 1px 0 rgba(255,255,255,0.22);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(140,115,90,0.22), inset 0 1px 0 rgba(255,255,255,0.32);
+  }
+}
+
+/* ═══ 缩放控件 — 花间集同款 ═══ */
+.map-zoom-controls {
+  position: absolute;
+  bottom: 40px;
+  left: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.map-ctrl-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(211, 184, 133, 0.33);
+  background: rgba(244, 239, 229, 0.44);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #716A6E;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.65;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.06);
+  pointer-events: auto;
+  user-select: none;
+  font-family: '汇文明朝体', serif;
+}
+
+.map-ctrl-btn:hover {
+  opacity: 1;
+  background: rgba(244, 239, 229, 0.85);
+  border-color: rgba(211, 184, 133, 0.5);
+  color: var(--textTitle);
+  box-shadow: 0 2px 10px rgba(211, 184, 133, 0.12);
+}
+
+/* ═══ 浮动详情面板 — 花间集风格浮现 ═══ */
+/* ═══ 右侧详情面板 — 花间集风格，点击标记时浮现 ═══ */
+.bridge-detail-panel {
+  position: absolute;
+  z-index: 600;
+  top: 14px;
+  right: 14px;
+  bottom: 14px;
+  width: 268px;
+  border-radius: 16px;
+  background: rgba(255, 252, 245, 0.04);
+  backdrop-filter: blur(8px) saturate(1.1);
+  -webkit-backdrop-filter: blur(8px) saturate(1.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    -4px 0 24px rgba(54, 49, 41, 0.08),
+    0 4px 20px rgba(180, 170, 195, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(200, 190, 210, 0.20);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: panelSlideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.bridge-detail-panel.closing {
+  animation: panelSlideOut 0.25s ease forwards;
+}
+
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes panelSlideOut {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(40px); }
+}
+
+.bridge-detail-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 22px 24px;
+}
+
+.bridge-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px 0;
+}
+
+.bridge-detail-name {
+  font-family: '汇文明朝体', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--textTitle);
+  letter-spacing: 3px;
+}
+
+.bridge-detail-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(211, 184, 133, 0.25);
+  background: rgba(244, 239, 229, 0.55);
+  color: var(--textSub);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.bridge-detail-close:hover {
+  background: rgba(211, 184, 133, 0.15);
+  border-color: var(--gold);
+  color: #B8936E;
+}
+
+.bridge-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.bridge-detail-tag {
+  padding: 2px 10px;
+  background: rgba(211, 184, 133, 0.1);
+  border: 1px solid rgba(211, 184, 133, 0.2);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #8A7D6E;
+  font-family: '汇文明朝体', serif;
+  letter-spacing: 1px;
+}
+
+.bridge-detail-divider {
+  width: 40px;
+  height: 1px;
+  margin: 16px 0;
+  background: linear-gradient(90deg, transparent, rgba(211, 184, 133, 0.35), transparent);
+}
+
+.bridge-detail-desc {
+  font-size: 13px;
+  line-height: 1.9;
+  color: #716A6E;
+  font-family: '汇文明朝体', serif;
+  letter-spacing: 1px;
+}
+
+.bridge-detail-subtitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold);
+  margin: 16px 0 8px;
+  font-family: '汇文明朝体', serif;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bridge-detail-subtitle::before {
+  content: '';
+  width: 3px;
+  height: 13px;
+  background: var(--gold);
+  border-radius: 2px;
+}
+
+.bridge-detail-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bridge-detail-feature-tag {
+  padding: 3px 10px;
+  background: rgba(113, 138, 111, 0.08);
+  border: 1px solid rgba(113, 138, 111, 0.15);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #5A6E58;
+  font-family: '汇文明朝体', serif;
+}
+
+.bridge-detail-poem {
+  padding: 10px 12px;
+  background: rgba(211, 184, 133, 0.06);
+  border-radius: 6px;
+  border-left: 2px solid rgba(211, 184, 133, 0.2);
+  margin-bottom: 8px;
+}
+
+.bridge-detail-poem-lines {
+  font-size: 12px;
+  line-height: 1.9;
+  color: #5A5040;
+  font-family: '汇文明朝体', serif;
+  letter-spacing: 1.5px;
+}
+
+.bridge-detail-poem-author {
+  font-size: 11px;
+  color: #9A9080;
+  margin-top: 4px;
+  text-align: right;
+  font-family: '汇文明朝体', serif;
+}
+
+.bridge-detail-spot {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.bridge-detail-spot-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.bridge-detail-spot-name {
+  font-weight: 600;
+  color: var(--textTitle);
+}
+
+.bridge-detail-spot-desc {
+  color: #8A7D6E;
+  font-size: 11px;
+}
+
+.bridge-detail-spot-tip {
+  color: var(--gold);
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.bridge-detail-panorama-btn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(211, 184, 133, 0.35);
+  background: rgba(211, 184, 133, 0.1);
+  color: var(--gold);
+  font-family: '汇文明朝体', serif;
+  font-size: 13px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.bridge-detail-panorama-btn:hover {
+  background: rgba(211, 184, 133, 0.2);
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(211, 184, 133, 0.15);
+}
+
+/* ═══ 海报浮层 — 卡片居中(仅底图+3D) + 文字四周环绕 ═══ */
+
+/* 地图暗化遮罩 — 加深保证文字可读 */
+.bridge-poster-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 500;
+  background: rgba(8, 6, 16, 0.62);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: posterOverlayIn 0.4s ease both;
+}
+
+@keyframes posterOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ═══ 海报整体容器 — 严格锁定 1440×1920 画布 ═══ */
+.bridge-poster-wrapper {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1440px;
+  height: 1920px;
+  z-index: 550;
+  pointer-events: none;
+  animation: posterWrapperIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.bridge-poster-wrapper.closing {
+  animation: posterWrapperOut 0.25s ease forwards;
+}
+
+/* ═══ 海报品牌图标 — 暗化版，卡片上方 ═══ */
+.poster-brand-capsule {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 560;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px 4px 5px;
+  border-radius: 24px;
+  background: rgba(244, 239, 229, 0.30);
+  border: 1px solid rgba(211, 184, 133, 0.12);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.poster-brand-capsule .capsule-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(211, 184, 133, 0.10);
+  border: 1px solid rgba(211, 184, 133, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--gold);
+  opacity: 0.55;
+}
+
+.poster-brand-capsule .capsule-text {
+  font-family: '汇文明朝体', serif;
+  font-size: 11px;
+  color: #E8D5B0;
+  letter-spacing: 2px;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+@keyframes posterWrapperIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes posterWrapperOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ═══ 信息行 — 卡片上方，固定在 1440×1920 画布内 ═══ */
+.bridge-info-row {
+  position: absolute;
+  top: 30px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 560;
+  pointer-events: auto;
+  animation: infoRowIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+@keyframes infoRowIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bridge-info-location {
+  font-family: '汇文明朝体', serif;
+  font-size: 14px;
+  color: var(--textTitle);
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+.bridge-info-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(211, 184, 133, 0.35);
+  border-radius: 1px;
+}
+
+.bridge-info-tag {
+  padding: 3px 14px;
+  border-radius: 14px;
+  background: rgba(113, 138, 111, 0.1);
+  border: 1px solid rgba(113, 138, 111, 0.18);
+  font-family: '汇文明朝体', serif;
+  font-size: 12px;
+  color: #5A6E58;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+}
+
+/* ═══ 卡片本体 — 底图 + 3D 粒子直铺 ═══ */
+.bridge-poster-card {
+  position: absolute;
+  top: 60px;
+  left: 470px;
+  width: 500px;
+  height: 680px;
+  border-radius: 14px;
+  border: 1px solid rgba(211, 184, 133, 0.28);
+  box-shadow:
+    0 0 80px rgba(211, 184, 133, 0.1),
+    0 16px 72px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  pointer-events: auto;
+  animation: posterCardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  cursor: default;
+}
+
+@keyframes posterCardIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 卡片顶部桥名标题 */
+.bridge-poster-title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  text-align: center;
+  padding: 28px 28px 22px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.15) 60%, transparent 100%);
+  font-family: '汇文明朝体', serif;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 8px;
+  color: #F5F0E0;
+  text-shadow:
+    0 0 10px rgba(201, 168, 130, 0.5),
+    0 0 24px rgba(201, 168, 130, 0.25),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+/* 卡片背景图层 */
+.bridge-poster-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 1;
+  pointer-events: none;
+}
+
+/* 卡片内 3D Canvas — 直接铺满卡片，不留边距 */
+.bridge-poster-canvas-fill {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 5;
+  overflow: hidden !important;
+}
+
+/* 强制 R3F 所有层级铺满 — 穿透到所有 div 和 canvas */
+.bridge-poster-canvas-fill,
+.bridge-poster-canvas-fill div,
+.bridge-poster-canvas-fill canvas {
+  box-sizing: border-box !important;
+}
+
+.bridge-poster-canvas-fill div {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.bridge-poster-canvas-fill canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* 拖拽提示 — 卡片底部绝对定位 */
+.bridge-poster-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 12;
+  pointer-events: none;
+  font-family: '汇文明朝体', serif;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.22);
+  letter-spacing: 2px;
+}
+
+/* ═══ 卡片顶部信息区 — 桥名 + 定位 + 类型 + 年代 ═══ */
+.bridge-poster-top-info {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 15;
+  padding: 24px 28px 32px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 55%, transparent 100%);
+  pointer-events: none;
+}
+
+.bridge-poster-top-name {
+  font-family: '汇文明朝体', serif;
+  font-size: 22px;
+  color: rgba(255,252,245,0.92);
+  letter-spacing: 6px;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.35);
+  margin-bottom: 6px;
+}
+
+.bridge-poster-top-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: '汇文明朝体', serif;
+  font-size: 12px;
+  color: rgba(255,248,220,0.7);
+  letter-spacing: 2px;
+}
+
+.bridge-poster-top-meta-divider {
+  width: 1px;
+  height: 10px;
+  background: rgba(255,248,220,0.3);
+}
+
+/* ═══ 卡片内底部内容区 ═══ */
+.bridge-poster-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 20px 20px 24px;
+  background: linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.2) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+/* 展开详情文字时加深底部渐变，确保文字可读 */
+.bridge-poster-content:has(.bridge-poster-detail) {
+  background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.38) 50%, transparent 100%);
+}
+/* 内容区透明部分不拦截点击，但子按钮仍可交互 */
+.bridge-poster-content .bridge-poster-keywords,
+.bridge-poster-content .bridge-poster-detail {
+  pointer-events: auto;
+}
+
+/* ═══ 关键词标签栏 — 卡片内部 ═══ */
+.bridge-poster-keywords {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  pointer-events: auto;
+}
+
+/* ═══ Hover 卡片淡入动画 ═══ */
+@keyframes hcFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══ 底部桥型筛选栏按钮 — 精致关键词风格 ═══ */
+.bridge-bottom-filter-btn {
+  padding: 5px 16px;
+  border-radius: 15px;
+  border: 1px solid rgba(211, 184, 133, 0.32);
+  background: rgba(244, 239, 229, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font-family: '汇文明朝体', serif;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #6B5E4E;
+  cursor: pointer;
+  transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.bridge-bottom-filter-btn:hover {
+  background: rgba(211, 184, 133, 0.18);
+  border-color: rgba(211, 184, 133, 0.5);
+  color: #8B7355;
+  box-shadow: 0 0 16px rgba(211, 184, 133, 0.15);
+  transform: translateY(-1px);
+}
+
+.bridge-bottom-filter-btn.active {
+  background: rgba(211, 184, 133, 0.22);
+  border-color: var(--gold);
+  color: #8B6D3E;
+  box-shadow:
+    0 0 18px rgba(201, 168, 130, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.bridge-poster-keyword {
+  padding: 4px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(211, 184, 133, 0.32);
+  background: rgba(244, 239, 229, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font-family: '汇文明朝体', serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #6B5E4E;
+  cursor: pointer;
+  transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.bridge-poster-keyword:hover {
+  background: rgba(211, 184, 133, 0.18);
+  border-color: rgba(211, 184, 133, 0.5);
+  color: #8B7355;
+  box-shadow: 0 0 16px rgba(211, 184, 133, 0.15);
+  transform: translateY(-1px);
+}
+
+.bridge-poster-keyword.active {
+  background: rgba(211, 184, 133, 0.22);
+  border-color: var(--gold);
+  color: #8B6D3E;
+  box-shadow:
+    0 0 18px rgba(201, 168, 130, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* ═══ 共用详情文字区 — 卡片内部 ═══ */
+.bridge-poster-detail {
+  max-height: 160px;
+  overflow-y: auto;
+  pointer-events: auto;
+  padding: 6px 4px 8px;
+  animation: detailReveal 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes detailReveal {
+  from {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 160px;
+    padding-top: 2px;
+  }
+}
+
+.bridge-poster-detail-label {
+  font-family: '汇文明朝体', serif;
+  font-size: 12px;
+  color: var(--gold);
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bridge-poster-detail-label::before {
+  content: '';
+  width: 4px;
+  height: 12px;
+  background: var(--gold);
+  border-radius: 2px;
+}
+
+.bridge-poster-detail-text {
+  font-family: '汇文明朝体', serif;
+  font-size: 13px;
+  line-height: 2;
+  color: rgba(255, 252, 245, 0.85);
+  letter-spacing: 1.5px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  text-align: justify;
+}
+
+/* 关键词内容中的数字高亮 */
+.num-highlight {
+  font-size: 16px;
+  color: #F0C86A;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(240, 200, 106, 0.5), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ═══ 底部信息面板 —— 缩略信息 + 点击展开详情 ═══ */
+.bridge-poster-bottom-panel {
+  position: absolute;
+  bottom: 3vh;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 560;
+  width: min(72vw, 900px);
+  max-width: calc(100vw - 40px);
+  border-radius: 14px;
+  background: rgba(228, 220, 210, 0.92);
+  border: 1px solid rgba(211, 184, 133, 0.28);
+  box-shadow:
+    0 -2px 24px rgba(54, 49, 41, 0.06),
+    0 4px 20px rgba(180, 170, 195, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+  animation: bottomPanelIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+@keyframes bottomPanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* 关闭按钮 */
+.bridge-poster-bottom-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(211, 184, 133, 0.25);
+  background: rgba(244, 239, 229, 0.55);
+  color: var(--textSub);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.bridge-poster-bottom-close:hover {
+  background: rgba(211, 184, 133, 0.15);
+  border-color: var(--gold);
+  color: #B8936E;
+  transform: scale(1.08);
+}
+
+/* 缩略信息栏 — 始终可见 */
+.bridge-poster-bottom-header {
+  padding: 16px 44px 0 20px;
+}
+
+.bridge-poster-bottom-name {
+  font-family: '汇文明朝体', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--textTitle);
+  letter-spacing: 4px;
+  line-height: 1.3;
+}
+
+.bridge-poster-bottom-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.bridge-poster-bottom-location {
+  font-family: '汇文明朝体', serif;
+  font-size: 13px;
+  color: var(--textSub);
+  letter-spacing: 2px;
+}
+
+.bridge-poster-bottom-tag {
+  padding: 2px 10px;
+  background: rgba(113, 138, 111, 0.08);
+  border: 1px solid rgba(113, 138, 111, 0.15);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #5A6E58;
+  font-family: '汇文明朝体', serif;
+  letter-spacing: 1px;
+}
+
+/* 可展开区块容器 */
+.bridge-poster-bottom-sections {
+  padding: 10px 16px 16px;
+}
+
+/* 每个展开区块 */
+.bridge-bottom-section {
+  border-bottom: 1px solid rgba(211, 184, 133, 0.1);
+}
+
+.bridge-bottom-section:last-child {
+  border-bottom: none;
+}
+
+/* 展开触发器 — 点击展开/收起 */
+.bridge-bottom-section-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: '汇文明朝体', serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--textTitle);
+  letter-spacing: 2px;
+  transition: color 0.2s ease;
+  text-align: left;
+}
+
+.bridge-bottom-section-trigger:hover {
+  color: var(--gold);
+}
+
+.bridge-bottom-section-trigger-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--goldLight);
+  flex-shrink: 0;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.bridge-bottom-section.open .bridge-bottom-section-trigger-dot {
+  background: var(--gold);
+  transform: scale(1.5);
+}
+
+.bridge-bottom-section-trigger-arrow {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--textSub);
+  transition: transform 0.25s ease;
+}
+
+.bridge-bottom-section-trigger-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+/* 展开内容区 */
+.bridge-bottom-section-content {
+  overflow: hidden;
+  animation: sectionExpand 0.3s ease both;
+  padding: 0 4px 12px;
+}
+
+@keyframes sectionExpand {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 600px;
+  }
+}
+
+/* 详情文本 */
+.bridge-bottom-detail-text {
+  font-family: '汇文明朝体', serif;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #716A6E;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+/* 建筑特征标签 */
+.bridge-bottom-detail-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bridge-bottom-feature-chip {
+  padding: 4px 12px;
+  background: rgba(113, 138, 111, 0.08);
+  border: 1px solid rgba(113, 138, 111, 0.15);
+  border-radius: 4px;
+  font-size: 12px;
+  color: #5A6E58;
+  font-family: '汇文明朝体', serif;
+  letter-spacing: 1px;
+  line-height: 1.5;
+}
+
+/* 诗词 */
+.bridge-bottom-poem {
+  padding: 10px 14px;
+  background: rgba(211, 184, 133, 0.06);
+  border-radius: 6px;
+  border-left: 2px solid rgba(211, 184, 133, 0.2);
+  margin-bottom: 8px;
+}
+
+.bridge-bottom-poem-lines {
+  font-family: '汇文明朝体', serif;
+  font-size: 13px;
+  line-height: 2;
+  color: #5A5040;
+  letter-spacing: 2px;
+}
+
+.bridge-bottom-poem-author {
+  font-family: '汇文明朝体', serif;
+  font-size: 11px;
+  color: #9A9080;
+  margin-top: 4px;
+  text-align: right;
+  letter-spacing: 1px;
+}
+
+/* 观赏去处 */
+.bridge-bottom-spot {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.bridge-bottom-spot-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.bridge-bottom-spot-name {
+  font-weight: 600;
+  color: var(--textTitle);
+  font-family: '汇文明朝体', serif;
+}
+
+.bridge-bottom-spot-desc {
+  color: #8A7D6E;
+  font-size: 11px;
+  font-family: '汇文明朝体', serif;
+}
+
+.bridge-bottom-spot-tip {
+  color: var(--gold);
+  font-size: 10px;
+  margin-left: 4px;
+  font-family: '汇文明朝体', serif;
+}
+
+/* 查看全景按钮 */
+.bridge-bottom-panorama-btn {
+  display: block;
+  margin-top: 10px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(211, 184, 133, 0.35);
+  background: rgba(211, 184, 133, 0.1);
+  color: var(--gold);
+  font-family: '汇文明朝体', serif;
+  font-size: 13px;
+  letter-spacing: 3px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.bridge-bottom-panorama-btn:hover {
+  background: rgba(211, 184, 133, 0.2);
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(211, 184, 133, 0.15);
+}
+
+/* ═══ 赵州桥粒子视频 — 画面中央全屏 ═══ */
+.zhaozhou-particle-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bridgeFadeIn 0.6s ease both;
+}
+
+.zhaozhou-particle-video {
+  width: auto;
+  height: 70%;
+  max-width: 50%;
+  object-fit: contain;
+}
+
+.zhaozhou-particle-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(211, 184, 133, 0.35);
+  background: rgba(244, 239, 229, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--textSub);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  z-index: 801;
+  pointer-events: auto;
+  transition: all 0.2s ease;
+}
+
+.zhaozhou-particle-close:hover {
+  background: rgba(211, 184, 133, 0.2);
+  border-color: var(--gold);
+  color: #B8936E;
+}
+
+/* ═══ 赵州桥粒子视频弹出动画 ═══ */
+@keyframes bridgeFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   十七孔桥 2D↔3D 切换动画
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 桥PNG层 — 基础样式 */
+.bridge-png-layer {
+  position: absolute;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* hover 高亮：微放大 + 金色光晕 */
+.bridge-png-layer:hover {
+  filter: brightness(1.15) drop-shadow(0 0 12px rgba(201, 168, 130, 0.45)) !important;
+  transform: scale(1.02) !important;
+  transition: all 0.3s ease !important;
+}
+
+/* 电波抖动 — 点击后 0.3s 水平震动 */
+@keyframes bridgeShake {
+  0%, 100% { transform: translateX(0); }
+  8%  { transform: translateX(-4px); }
+  16% { transform: translateX(4px); }
+  24% { transform: translateX(-3px); }
+  32% { transform: translateX(3px); }
+  40% { transform: translateX(-2px); }
+  48% { transform: translateX(2px); }
+  56% { transform: translateX(-1px); }
+  64% { transform: translateX(0); }
+}
+
+.bridge-png-layer.shaking {
+  animation: bridgeShake 0.35s ease-out;
+}
+
+/* 溶解 — opacity 1→0 + 微放大 + 模糊 */
+@keyframes bridgeDissolve {
+  0%   { opacity: 1; transform: scale(1);   filter: blur(0); }
+  100% { opacity: 0; transform: scale(1.06); filter: blur(4px); }
+}
+
+.bridge-png-layer.dissolving {
+  animation: bridgeDissolve 0.55s ease-in forwards;
+}
+
+/* 弹回 — scale(0.94)→1 弹性曲线 */
+@keyframes bridgeRebound {
+  0%   { opacity: 0; transform: scale(0.94); filter: blur(2px); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: scale(1);    filter: blur(0); }
+}
+
+.bridge-png-layer.emerging {
+  animation: bridgeRebound 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 白光闪现 */
+@keyframes bridgeWhiteFlash {
+  0%   { opacity: 0; }
+  25%  { opacity: 0.7; }
+  100% { opacity: 0; }
+}
+
+/* ── 十七孔桥 2D↔3D 过渡动画 ── */
+
+/* 震动 */
+.shiqikong-shaking {
+  animation: shiqikongShake 0.3s ease-in-out;
+}
+@keyframes shiqikongShake {
+  0%, 100% { transform: translateX(0); }
+  15%  { transform: translateX(-4px) rotate(-0.3deg); }
+  30%  { transform: translateX(4px) rotate(0.3deg); }
+  45%  { transform: translateX(-3px) rotate(-0.2deg); }
+  60%  { transform: translateX(3px) rotate(0.2deg); }
+  75%  { transform: translateX(-1px); }
+  90%  { transform: translateX(1px); }
+}
+
+/* 溶解 — 缩小 + 淡出 + 粒子化边缘 */
+.shiqikong-dissolving {
+  animation: shiqikongDissolve 0.6s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+@keyframes shiqikongDissolve {
+  0%   { opacity: 1; transform: scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: scale(1.04); filter: blur(8px); }
+}
+
+/* 弹回 — 缩小后反弹 */
+.shiqikong-emerging {
+  animation: shiqikongEmerge 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes shiqikongEmerge {
+  0%   { opacity: 0; transform: scale(0.92); filter: blur(4px); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+/* 粒子 Canvas 浮现 — 带微光呼吸 */
+@keyframes canvasEmerge {
+  0%   { opacity: 0; }
+  50%  { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   十七孔桥 三态交互系统 — ShiqikongBridge3D 样式
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 容器 ── */
+.sq-container {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  overflow: hidden;
+}
+
+/* ── 底图 Layer 0 ── */
+.sq-bg-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* 初始背景图（含桥） */
+.sq-bg-initial {
+  background-image: url('../images/十七孔桥粒子模型初始背景图.webp');
+  transition: opacity 0.5s ease;
+}
+
+/* 无桥背景图 */
+.sq-bg-no-bridge {
+  background-image: url('../images/十七孔桥粒子模型无桥背景图.webp');
+  transition: opacity 0.5s ease;
+}
+
+/* ── 桥 PNG Layer 1 ── */
+.sq-png-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: auto;
+  background-image: url('../images/shiqikong-bridge.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: filter 0.35s ease;
+}
+
+/* 态A hover 金色边缘发光 — 已改为 React isHoveringPNG state 驱动 inline style
+   原因：Canvas层(z:5)物理覆盖桥PNG(z:2)，CSS :hover 伪类无法激活 */
+
+/* 态A 点击态 */
+.sq-png-layer:not(.sq-png-hidden):active {
+  transform: scale(0.985);
+  transition: transform 0.1s ease;
+}
+
+/* PNG 隐藏 */
+.sq-png-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Canvas Layer 2 ── */
+.sq-canvas-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+}
+
+.sq-canvas-layer div,
+.sq-canvas-layer canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── 扫描线 Bar Layer 3 ── */
+.sq-scanline-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 10;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 240, 200, 0.15) 20%,
+    rgba(255, 220, 140, 0.8) 50%,
+    rgba(255, 240, 200, 0.15) 80%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 8px rgba(255, 220, 140, 0.7),
+    0 0 20px rgba(255, 220, 140, 0.35),
+    0 -2px 6px rgba(255, 240, 200, 0.2),
+    0 2px 6px rgba(255, 240, 200, 0.2);
+}
+
+/* 自动播放时扫描线 + 波纹 */
+.sq-scanline-bar {
+  animation: scanlinePulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes scanlinePulse {
+  from { 
+    box-shadow:
+      0 0 8px rgba(255, 220, 140, 0.7),
+      0 0 20px rgba(255, 220, 140, 0.35);
+  }
+  to {
+    box-shadow:
+      0 0 14px rgba(255, 220, 140, 0.9),
+      0 0 32px rgba(255, 220, 140, 0.5);
+  }
+}
+
+/* ── 对比模式标签 ── */
+.sq-compare-label {
+  position: absolute;
+  top: 8px;
+  z-index: 11;
+  pointer-events: none;
+  font-family: '汇文明朝体', serif;
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: rgba(255, 240, 210, 0.6);
+  text-shadow: 0 0 6px rgba(201, 168, 130, 0.4);
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(201, 168, 130, 0.2);
+}
+
+.sq-compare-label-left {
+  left: 10px;
+}
+
+.sq-compare-label-right {
+  right: 10px;
+}
+
+/* ── Glitch 故障信号 Layer 4 ── */
+.sq-glitch-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+  overflow: hidden;
+  animation: glitchFadeIn 0.35s ease-out both;
+}
+
+@keyframes glitchFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* RGB 分离底纹 */
+.sq-glitch-rgb-split {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 0, 0, 0.04) 0%,
+    transparent 33%,
+    rgba(0, 255, 255, 0.04) 66%,
+    transparent 100%
+  );
+  animation: glitchRgbShift 0.12s ease-in-out infinite alternate;
+}
+
+@keyframes glitchRgbShift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(1px, -1px); }
+}
+
+/* 粒子区碎片 */
+.sq-glitch-particle {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(201, 168, 130, 0.22) 0%, transparent 60%);
+  animation: glitchShatter 1.2s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+/* PNG区碎片 */
+.sq-glitch-png {
+  position: absolute;
+  inset: 0;
+  background-image: url('../images/shiqikong-bridge.webp');
+  background-size: cover;
+  background-position: center;
+  animation: glitchShatter 1.2s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+@keyframes glitchShatter {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg);
+    filter: brightness(1) contrast(1) blur(0);
+  }
+  10% {
+    opacity: 0.6;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--dr));
+    filter: brightness(1.3) contrast(1.5) blur(0);
+  }
+  25% {
+    opacity: 0.5;
+    transform: translate(calc(var(--dx) * 0.6), calc(var(--dy) * 0.6)) rotate(calc(var(--dr) * 0.4));
+    filter: brightness(0.9) contrast(1.1) blur(0.5px);
+  }
+  40% {
+    opacity: 0.65;
+    transform: translate(calc(var(--dx) * 1.1), calc(var(--dy) * 1.1)) rotate(calc(var(--dr) * 1.1));
+    filter: brightness(1.6) contrast(1.8) blur(0);
+  }
+  55% {
+    opacity: 0.45;
+    transform: translate(calc(var(--dx) * -0.25), calc(var(--dy) * -0.25)) rotate(calc(var(--dr) * -0.2));
+    filter: brightness(0.7) contrast(1) blur(1px);
+  }
+  70% {
+    opacity: 0.35;
+    transform: translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) rotate(calc(var(--dr) * 0.15));
+    filter: brightness(1.1) contrast(1.3) blur(0);
+  }
+  85% {
+    opacity: 0.12;
+    filter: blur(2px) brightness(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg);
+    filter: blur(3px) brightness(1);
+  }
+}
+
+/* 故障扫描纹 */
+.sq-glitch-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.02) 2px,
+    rgba(255, 255, 255, 0.02) 4px
+  );
+  opacity: 0.25;
+  animation: glitchScan 0.15s ease-in-out infinite;
+}
+
+@keyframes glitchScan {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(2px); }
+}
+
+/* 故障噪点 */
+.sq-glitch-noise {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0;
+  animation: glitchNoiseOn 0.8s ease-out forwards;
+}
+
+@keyframes glitchNoiseOn {
+  0% { opacity: 0; }
+  20% { opacity: 0.3; }
+  60% { opacity: 0.15; }
+  100% { opacity: 0; }
+}
+
+/* ── 提示文字 Layer 5 ── */
+.sq-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 12;
+  pointer-events: none;
+  font-family: '汇文明朝体', serif;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 2.5px;
+  text-shadow: 0 0 4px rgba(201, 168, 130, 0.2);
+}
+
+/* ── 编辑器面板 Layer 6 ── */
+.sq-editor-panel {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(10, 8, 24, 0.92);
+  border: 1px solid rgba(201, 168, 130, 0.35);
+  border-radius: 10px;
+  padding: 10px 16px;
+  min-width: 260px;
+  max-width: 380px;
+  max-height: 52px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5), 0 0 10px rgba(201, 168, 130, 0.15);
+  transition: max-height 0.35s ease, padding 0.35s ease;
+}
+.sq-editor-panel.sq-editor-expanded {
+  padding: 16px 20px;
+  max-height: calc(100% - 80px);
+  overflow-y: auto;
+}
+
+.sq-editor-title {
+  font-family: '汇文明朝体', serif;
+  font-size: 14px;
+  color: rgba(255, 240, 210, 0.8);
+  letter-spacing: 3px;
+  text-align: center;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(201, 168, 130, 0.15);
+  padding-bottom: 8px;
+}
+
+.sq-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.sq-editor-label {
+  font-family: '汇文明朝体', serif;
+  color: rgba(201, 168, 130, 0.6);
+  letter-spacing: 1.5px;
+  min-width: 65px;
+}
+
+.sq-editor-value {
+  font-family: 'Courier New', monospace;
+  color: rgba(255, 240, 210, 0.75);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.sq-editor-copy {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 6px 0;
+  border: 1px solid rgba(201, 168, 130, 0.3);
+  border-radius: 6px;
+  background: rgba(201, 168, 130, 0.1);
+  color: rgba(255, 240, 210, 0.7);
+  font-family: '汇文明朝体', serif;
+  font-size: 12px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.sq-editor-copy:hover {
+  background: rgba(201, 168, 130, 0.2);
+  border-color: rgba(201, 168, 130, 0.5);
+  color: rgba(255, 240, 210, 0.9);
+  box-shadow: 0 0 12px rgba(201, 168, 130, 0.15);
+}
+
+.sq-editor-hint {
+  text-align: center;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: 1px;
+  margin-top: 8px;
+}
+
+/* ── 校准编辑器 ── */
+.sq-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  white-space: nowrap;
+}
+.sq-editor-title-compact {
+  font-family: '汇文明朝体', serif;
+  font-size: 12px;
+  color: rgba(201, 168, 130, 0.65);
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sq-editor-toggle-btn {
+  font-family: sans-serif;
+  font-size: 10px;
+  color: rgba(201, 168, 130, 0.5);
+  cursor: pointer;
+  padding: 2px 6px;
+  border: 1px solid rgba(201, 168, 130, 0.2);
+  border-radius: 4px;
+  transition: all 0.2s;
+  user-select: none;
+}
+.sq-editor-toggle-btn:hover {
+  color: rgba(201, 168, 130, 0.85);
+  border-color: rgba(201, 168, 130, 0.45);
+  background: rgba(201, 168, 130, 0.08);
+}
+
+.sq-editor-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(201, 168, 130, 0.75);
+  cursor: pointer;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+.sq-editor-check.sq-editor-check-inline {
+  margin-bottom: 0;
+  font-size: 10px;
+  gap: 5px;
+}
+.sq-editor-check input {
+  accent-color: #c9a882;
+  cursor: pointer;
+}
+
+.sq-editor-section {
+  border-top: 1px solid rgba(201, 168, 130, 0.12);
+  padding: 10px 0;
+}
+.sq-editor-section-title {
+  font-family: '汇文明朝体', serif;
+  font-size: 12px;
+  color: rgba(232, 213, 176, 0.55);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.sq-editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.sq-calib-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sq-calib-input label {
+  font-size: 10px;
+  color: rgba(201, 168, 130, 0.45);
+  min-width: 70px;
+  letter-spacing: 0.5px;
+}
+.sq-calib-input input {
+  width: 70px;
+  padding: 3px 6px;
+  border: 1px solid rgba(201, 168, 130, 0.2);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 240, 210, 0.8);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  text-align: right;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.sq-calib-input input:focus {
+  border-color: rgba(201, 168, 130, 0.5);
+  box-shadow: 0 0 6px rgba(201, 168, 130, 0.1);
+}
+
+/* ── 关闭按钮 ── */
+.sq-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 20;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(211, 184, 133, 0.32);
+  background: rgba(244, 239, 229, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #6B5E4E;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+}
+
+.sq-close-btn:hover {
+  border-color: rgba(211, 184, 133, 0.5);
+  background: rgba(211, 184, 133, 0.18);
+  color: #8B7355;
+  box-shadow: 0 0 16px rgba(211, 184, 133, 0.15);
+  transform: scale(1.08);
+}
+
+/* ── 底部控制栏 ── */
+.sq-bottom-controls {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* 探照灯开关按钮 */
+.sq-flashlight-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(211, 184, 133, 0.32);
+  background: rgba(244, 239, 229, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #6B5E4E;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+.sq-flashlight-btn:hover {
+  border-color: rgba(211, 184, 133, 0.5);
+  background: rgba(211, 184, 133, 0.18);
+  color: #8B7355;
+  box-shadow: 0 0 16px rgba(211, 184, 133, 0.15);
+}
+.sq-flashlight-active {
+  color: #8B6D3E;
+  border-color: var(--gold, rgba(201, 168, 130, 0.55));
+  background: rgba(211, 184, 133, 0.22);
+  box-shadow:
+    0 0 18px rgba(201, 168, 130, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* 闪电重置按钮 */
+.sq-glitch-trigger-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(211, 184, 133, 0.32);
+  background: rgba(244, 239, 229, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #6B5E4E;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+.sq-glitch-trigger-btn:hover {
+  border-color: rgba(211, 184, 133, 0.5);
+  background: rgba(211, 184, 133, 0.18);
+  color: #8B7355;
+  box-shadow: 0 0 16px rgba(211, 184, 133, 0.15);
+}
+
+/* ═══ 关键词行内小图标按钮（手电筒/闪电） ═══ */
+.sq-kw-icon-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(211, 184, 133, 0.32);
+  background: rgba(244, 239, 229, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #6B5E4E;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  user-select: none;
+  flex-shrink: 0;
+  padding: 0;
+}
+.sq-kw-icon-btn:hover {
+  background: rgba(211, 184, 133, 0.18);
+  border-color: rgba(211, 184, 133, 0.5);
+  color: #8B7355;
+  box-shadow: 0 0 16px rgba(211, 184, 133, 0.15);
+}
+.sq-kw-icon-active {
+  border-color: var(--gold, rgba(201, 168, 130, 0.55));
+  background: rgba(211, 184, 133, 0.22);
+  color: #8B6D3E;
+  box-shadow:
+    0 0 18px rgba(201, 168, 130, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* ═══ 分类面板上滑动画 ═══ */
+@keyframes categorySlideUp {
+  0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
