@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import type { Bridge } from '../../types/bridge'
-import { BRIDGE_TYPE_LABELS, BRIDGE_CATEGORY_COLORS } from '../../data/bridges'
+import { BRIDGE_TYPE_LABELS, BRIDGE_CATEGORY_COLORS, MAP_BRIDGE_IDS } from '../../data/bridges'
 import BridgeMap from './BridgeMap'
 import { latLngToWorldPos, SOUTH_SHIFT } from './Terrain3D'
 import * as THREE from 'three'
@@ -12,7 +12,7 @@ interface BridgeCamEntry {
   camTarget: [number, number, number]
 }
 const BRIDGE_CAM_CONFIGS: Record<string, BridgeCamEntry> = {
-  'luoyang-bridge': { camPos: [0.88, 3.65, 8.22], camTarget: [1.12, -1.81, 1.95] },
+  'luoyang-bridge': { camPos: [3.53, 3.39, 5.07], camTarget: [0.35, -1.03, 1.65] },
   anping: { camPos: [0.88, 3.65, 8.22], camTarget: [1.12, -1.81, 1.95] },
   'chengyang-yongji': { camPos: [-0.34, 4.00, 7.87], camTarget: [-0.10, -1.47, 1.60] },
   luding: { camPos: [-1.75, 4.19, 7.65], camTarget: [-1.50, -1.27, 1.38] },
@@ -74,11 +74,14 @@ export default function HomePage({ bridges, selectedBridge, unlockedPanoramas, o
   const [viewMode, setViewMode] = useState<'global' | 'local'>('global')
   const [panelClosing, setPanelClosing] = useState(false)
   const [selectedKeywordIdx, setSelectedKeywordIdx] = useState<number | null>(null)
-  const shiqikongActionsRef = useRef<{ toggleFlashlight: () => void; triggerGlitch: () => void; isFlashlightOn: boolean; currentMode: string } | null>(null)
-  const wutingqiaoActionsRef = useRef<{ toggleFlashlight: () => void; triggerGlitch: () => void; isFlashlightOn: boolean; currentMode: string } | null>(null)
-  const chengyangActionsRef = useRef<{ toggleFlashlight: () => void; triggerGlitch: () => void; isFlashlightOn: boolean; currentMode: string } | null>(null)
+  const shiqikongActionsRef = useRef<{ toggleFlashlight: () => void; triggerGlitch: () => void; reset: () => void; showSwipeHint: () => void; isFlashlightOn: boolean; isTexturedOnlyOn: boolean; currentMode: string } | null>(null)
+  const wutingqiaoActionsRef = useRef<{ toggleFlashlight: () => void; triggerGlitch: () => void; reset: () => void; showSwipeHint: () => void; isFlashlightOn: boolean; isTexturedOnlyOn: boolean; currentMode: string } | null>(null)
+  const chengyangActionsRef = useRef<{ toggleFlashlight: () => void; triggerGlitch: () => void; reset: () => void; showSwipeHint: () => void; isFlashlightOn: boolean; isTexturedOnlyOn: boolean; currentMode: string } | null>(null)
   const [, setForceUpdate] = useState(0) // 强制刷新以获取最新 ref 值
   const [showTimeRiver, setShowTimeRiver] = useState(false)
+  // 模型桥交互引导状态
+  const guideHistoryRef = useRef({ hasScanned: false, hasDragged: false, hasFlashlight: false, hasGlitch: false })
+  const [guideTick, setGuideTick] = useState(0)
   const [categoryCamRaw, setCategoryCamRaw] = useState<{ pos: [number, number, number]; target: [number, number, number] } | null>(null)
   const [categoryCalibrate, setCategoryCalibrate] = useState(false)
   const [categoryCamInfo, setCategoryCamInfo] = useState<{ pos: THREE.Vector3; target: THREE.Vector3 } | null>(null)
@@ -96,8 +99,11 @@ export default function HomePage({ bridges, selectedBridge, unlockedPanoramas, o
   const isSpecialBridge = isShiqikong || isWutingqiao || isChengyangYongji
   const activeActionsRef = isShiqikong ? shiqikongActionsRef : isWutingqiao ? wutingqiaoActionsRef : chengyangActionsRef
 
+  const mapBridgeSet = useMemo(() => new Set(MAP_BRIDGE_IDS), [])
+  const displayBridges = useMemo(() => bridges.filter(b => mapBridgeSet.has(b.id)), [bridges, mapBridgeSet])
+
   const filteredBridges = useMemo(() => {
-    let list = bridges
+    let list = displayBridges
     // 类型筛选
     if (filterType) {
       list = list.filter(b => b.type === filterType)
@@ -109,7 +115,7 @@ export default function HomePage({ bridges, selectedBridge, unlockedPanoramas, o
       )
     }
     return list
-  }, [bridges, filterType, searchTerm])
+  }, [displayBridges, filterType, searchTerm])
 
   const types = useMemo(() => [...new Set(bridges.map(b => b.type))], [bridges])
 
@@ -146,6 +152,46 @@ export default function HomePage({ bridges, selectedBridge, unlockedPanoramas, o
     }
   }, [focusBridgeId])
 
+  // 选中桥变化时重置引导状态
+  useEffect(() => {
+    guideHistoryRef.current = { hasScanned: false, hasDragged: false, hasFlashlight: false, hasGlitch: false }
+    setGuideTick(0)
+  }, [selectedBridge?.id])
+
+  // 定期追踪模型桥交互进度
+  useEffect(() => {
+    if (!isSpecialBridge) return
+    const interval = setInterval(() => {
+      const mode = activeActionsRef.current?.currentMode
+      const isFlashlight = activeActionsRef.current?.isFlashlightOn
+      const isTexturedOnly = activeActionsRef.current?.isTexturedOnlyOn
+      const prev = guideHistoryRef.current
+      const next = {
+        hasScanned: prev.hasScanned || (mode !== 'png' && mode !== undefined),
+        hasDragged: prev.hasDragged,
+        hasFlashlight: prev.hasFlashlight || !!isFlashlight,
+        hasGlitch: prev.hasGlitch || !!isTexturedOnly,
+      }
+      if (next.hasScanned !== prev.hasScanned || next.hasFlashlight !== prev.hasFlashlight || next.hasGlitch !== prev.hasGlitch) {
+        guideHistoryRef.current = next
+        setGuideTick(n => n + 1)
+      }
+    }, 300)
+    return () => clearInterval(interval)
+  }, [isSpecialBridge, activeActionsRef])
+
+  // 场景图区域 pointerdown → 标记用户已开始拖拽（仅非png模式）
+  const handleLeftPointerDown = useCallback(() => {
+    if (!isSpecialBridge) return
+    const mode = activeActionsRef.current?.currentMode
+    // png模式下pointerdown是点击扫描，不算拖拽
+    if (mode === 'png') return
+    if (!guideHistoryRef.current.hasDragged) {
+      guideHistoryRef.current.hasDragged = true
+      setGuideTick(n => n + 1)
+    }
+  }, [isSpecialBridge, activeActionsRef])
+
   // 分类模式专用相机（优先 bridge 聚焦）
   const resolvedCamOverride = useMemo(() => {
     if (camOverride) return camOverride
@@ -158,7 +204,7 @@ export default function HomePage({ bridges, selectedBridge, unlockedPanoramas, o
 
   // 桥梁图鉴筛选和分组
   const collectionBridges = useMemo(() => {
-    let list = bridges
+    let list = displayBridges
     if (collectionFilterType) {
       list = list.filter(b => b.type === collectionFilterType)
     }
@@ -179,7 +225,71 @@ export default function HomePage({ bridges, selectedBridge, unlockedPanoramas, o
     }
     
     return grouped
-  }, [bridges, collectionFilterType, collectionSearch])
+  }, [displayBridges, collectionFilterType, collectionSearch])
+
+  // 拍平列表项（组标题 + 桥项），用于虚拟滚动
+  const flatListItems = useMemo(() => {
+    const items: Array<{ type: 'group' | 'bridge'; key: string; data: any; height: number }> = []
+    const groups = [
+      { title: '名桥经典', list: collectionBridges.famous },
+      { title: '现代奇迹', list: collectionBridges.modern },
+      { title: '古韵悠长', list: collectionBridges.other },
+    ]
+    for (const g of groups) {
+      if (g.list.length > 0) {
+        items.push({ type: 'group', key: `group-${g.title}`, data: g.title, height: 32 })
+        for (const b of g.list) {
+          items.push({ type: 'bridge', key: b.id, data: b, height: 48 })
+        }
+      }
+    }
+    return items
+  }, [collectionBridges])
+
+  const listRef = useRef<HTMLDivElement>(null)
+  const [scrollTop, setScrollTop] = useState(0)
+
+  const virtualItems = useMemo(() => {
+    const containerHeight = listRef.current?.clientHeight || 500
+    const overscan = 6
+    let offset = 0
+    let startIdx = 0
+    let endIdx = flatListItems.length
+    
+    for (let i = 0; i < flatListItems.length; i++) {
+      if (offset + flatListItems[i].height < scrollTop - 50) {
+        startIdx = i + 1
+      }
+      if (offset > scrollTop + containerHeight + 50) {
+        endIdx = i
+        break
+      }
+      offset += flatListItems[i].height
+    }
+    
+    const visibleStart = Math.max(0, startIdx - overscan)
+    const visibleEnd = Math.min(flatListItems.length, endIdx + overscan)
+    
+    let topOffset = 0
+    for (let i = 0; i < visibleStart; i++) {
+      topOffset += flatListItems[i].height
+    }
+    
+    let totalHeight = 0
+    for (const item of flatListItems) {
+      totalHeight += item.height
+    }
+    
+    return {
+      items: flatListItems.slice(visibleStart, visibleEnd),
+      topOffset,
+      totalHeight,
+    }
+  }, [flatListItems, scrollTop])
+
+  const handleListScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop((e.target as HTMLDivElement).scrollTop)
+  }, [])
 
   const handleCategoryCamChange = useCallback((pos: THREE.Vector3, target: THREE.Vector3) => {
     setCategoryCamInfo({ pos: pos.clone(), target: target.clone() })
@@ -294,69 +404,44 @@ export default function HomePage({ bridges, selectedBridge, unlockedPanoramas, o
         
         <div className="bridge-collection-progress">
           <div className="bridge-collection-progress-text">
-            已解锁 {selectedBridge ? 1 : 0} / {bridges.length}
+            已解锁 {selectedBridge ? 1 : 0} / {displayBridges.length}
           </div>
           <div className="bridge-collection-progress-bar">
             <div
               className="bridge-collection-progress-fill"
-              style={{ width: `${(selectedBridge ? 1 : 0) / bridges.length * 100}%` }}
+              style={{ width: `${(selectedBridge ? 1 : 0) / displayBridges.length * 100}%` }}
             />
           </div>
         </div>
         
-        <div className="bridge-collection-list">
-          {collectionBridges.famous.length > 0 && (
-            <>
-              <div className="bridge-collection-group-title">名桥经典</div>
-              {collectionBridges.famous.map(bridge => (
-                <div
-                  key={bridge.id}
-                  className={`bridge-collection-item${selectedBridge?.id === bridge.id ? ' selected' : ''}`}
-                  onClick={() => handleSelectBridge(bridge)}
-                >
-                  <div className="bridge-collection-item-icon">{(BRIDGE_TYPE_LABELS[bridge.type] || bridge.type)[0]}</div>
-                  <div className="bridge-collection-item-name">{bridge.name}</div>
-                  <div className="bridge-collection-item-city">{bridge.city}</div>
-                </div>
-              ))}
-            </>
-          )}
-          
-          {collectionBridges.modern.length > 0 && (
-            <>
-              <div className="bridge-collection-group-title">现代奇迹</div>
-              {collectionBridges.modern.map(bridge => (
-                <div
-                  key={bridge.id}
-                  className={`bridge-collection-item${selectedBridge?.id === bridge.id ? ' selected' : ''}`}
-                  onClick={() => handleSelectBridge(bridge)}
-                >
-                  <div className="bridge-collection-item-icon">{(BRIDGE_TYPE_LABELS[bridge.type] || bridge.type)[0]}</div>
-                  <div className="bridge-collection-item-name">{bridge.name}</div>
-                  <div className="bridge-collection-item-city">{bridge.city}</div>
-                </div>
-              ))}
-            </>
-          )}
-          
-          {collectionBridges.other.length > 0 && (
-            <>
-              <div className="bridge-collection-group-title">古韵悠长</div>
-              {collectionBridges.other.map(bridge => (
-                <div
-                  key={bridge.id}
-                  className={`bridge-collection-item${selectedBridge?.id === bridge.id ? ' selected' : ''}`}
-                  onClick={() => handleSelectBridge(bridge)}
-                >
-                  <div className="bridge-collection-item-icon">{(BRIDGE_TYPE_LABELS[bridge.type] || bridge.type)[0]}</div>
-                  <div className="bridge-collection-item-name">{bridge.name}</div>
-                  <div className="bridge-collection-item-city">{bridge.city}</div>
-                </div>
-              ))}
-            </>
-          )}
-          
-          {!collectionBridges.famous.length && !collectionBridges.modern.length && !collectionBridges.other.length && (
+        <div className="bridge-collection-list" ref={listRef} onScroll={handleListScroll}>
+          {flatListItems.length > 0 ? (
+            <div style={{ position: 'relative', height: virtualItems.totalHeight }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, transform: `translateY(${virtualItems.topOffset}px)` }}>
+                {virtualItems.items.map(item => {
+                  if (item.type === 'group') {
+                    return (
+                      <div key={item.key} className="bridge-collection-group-title">
+                        {item.data}
+                      </div>
+                    )
+                  }
+                  const bridge = item.data as Bridge
+                  return (
+                    <div
+                      key={item.key}
+                      className={`bridge-collection-item${selectedBridge?.id === bridge.id ? ' selected' : ''}`}
+                      onClick={() => handleSelectBridge(bridge)}
+                    >
+                      <div className="bridge-collection-item-icon">{(BRIDGE_TYPE_LABELS[bridge.type] || bridge.type)[0]}</div>
+                      <div className="bridge-collection-item-name">{bridge.name}</div>
+                      <div className="bridge-collection-item-city">{bridge.city}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
             <div className="bridge-collection-empty">未找到匹配的桥梁</div>
           )}
         </div>
@@ -567,7 +652,6 @@ export default function HomePage({ bridges, selectedBridge, unlockedPanoramas, o
               className="bridge-poster-card"
               onClick={(e) => {
                 e.stopPropagation()
-                if (!isSpecialBridge) handleClosePanel()
               }}
             >
               {/* 关闭按钮 — 右上角 */}
@@ -580,7 +664,7 @@ export default function HomePage({ bridges, selectedBridge, unlockedPanoramas, o
               </button>
 
               {/* ── 左侧：3:4 场景图/模型区 ── */}
-              <div className="bridge-poster-left">
+              <div className="bridge-poster-left" onPointerDown={handleLeftPointerDown}>
                 {posterLoading && (
                   <div className="bridge-poster-loading">
                     <div className="bridge-poster-loading-content">
@@ -623,19 +707,48 @@ export default function HomePage({ bridges, selectedBridge, unlockedPanoramas, o
                   )
                 ) : (
                   <>
-                    {/* 其他桥：原始底图层 */}
-                    <div
-                      className="bridge-poster-bg"
-                      style={{
-                        backgroundImage: selectedBridge.posterImage
-                          ? `url(${selectedBridge.posterImage})`
-                          : 'none',
-                      }}
-                    />
-                    <div className="bridge-poster-title">{selectedBridge.name}</div>
-                    <BridgeCanvas3D bridge={selectedBridge} />
+                    {/* 其他桥：场景图或米色占位 */}
+                    {selectedBridge.posterImage && selectedBridge.posterImage !== 'images/赵州桥粒子模型背景图.webp' ? (
+                      <>
+                        <div
+                          className="bridge-poster-bg"
+                          style={{
+                            backgroundImage: `url(${selectedBridge.posterImage})`,
+                          }}
+                        />
+                        <BridgeCanvas3D bridge={selectedBridge} />
+                      </>
+                    ) : (
+                      <div className="bridge-poster-placeholder">
+                        <span className="bridge-poster-placeholder-text">场景图待更新</span>
+                      </div>
+                    )}
                   </>
                 )}
+
+                {/* ── 模型桥交互引导浮层（6阶段） ── */}
+                {isSpecialBridge && (() => {
+                  const mode = activeActionsRef.current?.currentMode
+                  const g = guideHistoryRef.current
+                  // 阶段1: 引导扫描（png模式，未扫描）
+                  if (!g.hasScanned && mode === 'png') {
+                    return (
+                      <div className="bridge-guide-bubble bridge-guide-bubble--top">
+                        <span className="bridge-guide-bubble-text">悬停桥体，点击扫描化为粒子</span>
+                        <span className="bridge-guide-bubble-arrow-down">▼</span>
+                      </div>
+                    )
+                  }
+                  // 阶段2: 引导拖拽（已扫描进入非png模式，未拖拽未开手电筒）
+                  if (g.hasScanned && !g.hasDragged && !g.hasFlashlight && mode !== 'png' && mode !== undefined) {
+                    return (
+                      <div className="bridge-guide-bubble bridge-guide-bubble--top">
+                        <span className="bridge-guide-bubble-text">可拖拽移动旋转观看</span>
+                      </div>
+                    )
+                  }
+                  return null
+                })()}
 
                 {/* ── 左侧场景图底部控制栏（手电筒+闪电+重置） ── */}
                 {isSpecialBridge && (
@@ -663,7 +776,14 @@ export default function HomePage({ bridges, selectedBridge, unlockedPanoramas, o
                     </button>
                     <button
                       className="bridge-poster-left-control-btn"
-                      onClick={(e) => { e.stopPropagation(); activeActionsRef.current?.reset(); setForceUpdate(n => n + 1) }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        activeActionsRef.current?.reset()
+                        setForceUpdate(n => n + 1)
+                        setTimeout(() => {
+                          activeActionsRef.current?.showSwipeHint()
+                        }, 100)
+                      }}
                       title="重置为初始状态"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -673,38 +793,143 @@ export default function HomePage({ bridges, selectedBridge, unlockedPanoramas, o
                     </button>
                   </div>
                 )}
+
+                {/* 阶段3: 手电筒图标上方引导（拖拽后，未开手电筒） */}
+                {isSpecialBridge && (() => {
+                  const mode = activeActionsRef.current?.currentMode
+                  const g = guideHistoryRef.current
+                  // 拖拽后且非png模式时显示
+                  const showFlashlightTip = g.hasDragged && !g.hasFlashlight && mode !== 'png' && mode !== undefined
+                  if (!showFlashlightTip) return null
+                  return (
+                    <div className="bridge-guide-icon-tooltip bridge-guide-icon-tooltip--flashlight">
+                      <span className="bridge-guide-icon-tooltip-arrow">▼</span>
+                      <span className="bridge-guide-icon-tooltip-text">开启手电筒模式，悬停桥体探微</span>
+                    </div>
+                  )
+                })()}
+
+                {/* 阶段4: 闪电图标上方引导（已开手电筒，未触发闪电） */}
+                {isSpecialBridge && (() => {
+                  const mode = activeActionsRef.current?.currentMode
+                  const g = guideHistoryRef.current
+                  const showLightningTip = g.hasFlashlight && !g.hasGlitch && mode === 'particle'
+                  if (!showLightningTip) return null
+                  return (
+                    <div className="bridge-guide-icon-tooltip bridge-guide-icon-tooltip--lightning">
+                      <span className="bridge-guide-icon-tooltip-arrow">▼</span>
+                      <span className="bridge-guide-icon-tooltip-text">一键切换模型</span>
+                    </div>
+                  )
+                })()}
+
+                {/* 阶段5: 重置图标上方引导（已触发闪电变成贴图模型） */}
+                {isSpecialBridge && (() => {
+                  const mode = activeActionsRef.current?.currentMode
+                  const g = guideHistoryRef.current
+                  // 闪电完成（texturedOnlyOn=true），mode仍为particle时显示
+                  const showResetTip = g.hasGlitch && mode === 'particle'
+                  if (!showResetTip) return null
+                  return (
+                    <div className="bridge-guide-icon-tooltip bridge-guide-icon-tooltip--reset">
+                      <span className="bridge-guide-icon-tooltip-arrow">▼</span>
+                      <span className="bridge-guide-icon-tooltip-text">返回场景图</span>
+                    </div>
+                  )
+                })()}
+
               </div>
 
               {/* ── 右侧：文字信息区 ── */}
               <div className="bridge-poster-right">
-                {/* 卡片底部内容区 — pointer-events:none 父层穿透，关键词按钮 pointer-events:auto 仍可点击 */}
-                <div
-                  className="bridge-poster-content"
-                >
-                  {/* 关键词标签栏（竖版排版） */}
-                  {selectedBridge.keywords && selectedBridge.keywords.length > 0 && (
-                    <div className="bridge-poster-keywords">
-                      {selectedBridge.keywords.map((kw, idx) => (
-                        <button
-                          key={idx}
-                          className={`bridge-poster-keyword animate-in${selectedKeywordIdx === idx ? ' active' : ''}`}
-                          style={{ animationDelay: `${idx * 0.1}s` } as React.CSSProperties}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedKeywordIdx(selectedKeywordIdx === idx ? null : idx)
-                          }}
-                        >
-                          {kw.label}
-                        </button>
+                <div className="bridge-info-content">
+                  {/* 基本信息 */}
+                  <div className="bridge-info-section">
+                    <div className="bridge-info-meta">
+                      <span>{selectedBridge.era} · {selectedBridge.year}</span>
+                      <span className="bridge-info-meta-divider">|</span>
+                      <span>{BRIDGE_TYPE_LABELS[selectedBridge.type] || selectedBridge.type}</span>
+                      <span className="bridge-info-meta-divider">|</span>
+                      <span>{selectedBridge.length}</span>
+                    </div>
+                  </div>
+
+                  {/* 桥梁简介 */}
+                  <div className="bridge-info-section">
+                    <div className="bridge-info-title">桥梁简介</div>
+                    <div className="bridge-info-text">{selectedBridge.description}</div>
+                  </div>
+
+                  {/* 历史故事 */}
+                  <div className="bridge-info-section">
+                    <div className="bridge-info-title">历史故事</div>
+                    <div className="bridge-info-text">{selectedBridge.history}</div>
+                  </div>
+
+                  {/* 特色亮点 */}
+                  <div className="bridge-info-section">
+                    <div className="bridge-info-title">特色亮点</div>
+                    <ul className="bridge-info-features">
+                      {selectedBridge.features.map((f, i) => (
+                        <li key={i}>{f}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* 诗词文化（仅有诗词时显示） */}
+                  {selectedBridge.poems && selectedBridge.poems.length > 0 && (
+                    <div className="bridge-info-section">
+                      <div className="bridge-info-title">诗词文化</div>
+                      {selectedBridge.poems.map((p, i) => (
+                        <div key={i} className="bridge-info-poem">
+                          <div className="bridge-info-poem-title">《{p.title}》 — {p.author}</div>
+                          <div className="bridge-info-poem-lines">
+                            {p.lines.map((l, j) => (
+                              <span key={j}>{l}{j < p.lines.length - 1 ? '，' : ''}</span>
+                            ))}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   )}
 
-                  {/* 共用详情文字区 */}
-                  {selectedKeywordIdx !== null && selectedBridge.keywords?.[selectedKeywordIdx] && (
-                    <div className="bridge-poster-detail">
-                      <div className="bridge-poster-detail-text">
-                        {renderContentWithAnimation(selectedBridge.keywords[selectedKeywordIdx].content)}
+                  {/* 观赏指南（仅有数据时显示） */}
+                  {selectedBridge.viewingSpots && selectedBridge.viewingSpots.length > 0 && (
+                    <div className="bridge-info-section">
+                      <div className="bridge-info-title">观赏指南</div>
+                      {selectedBridge.viewingSpots.map((s, i) => (
+                        <div key={i} className="bridge-info-spot">
+                          <span className="bridge-info-spot-name">{s.name}</span>
+                          <span className="bridge-info-spot-desc">{s.desc}</span>
+                          {s.tip && <span className="bridge-info-spot-tip">{s.tip}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 文旅信息（仅有数据时显示） */}
+                  {(selectedBridge.openingHours || selectedBridge.ticket || (selectedBridge.nearbyAttractions && selectedBridge.nearbyAttractions.length > 0)) && (
+                    <div className="bridge-info-section">
+                      <div className="bridge-info-title">文旅信息</div>
+                      <div className="bridge-info-tourism">
+                        {selectedBridge.openingHours && (
+                          <div className="bridge-info-tourism-row">
+                            <span className="bridge-info-tourism-label">开放时间</span>
+                            <span className="bridge-info-tourism-value">{selectedBridge.openingHours}</span>
+                          </div>
+                        )}
+                        {selectedBridge.ticket && (
+                          <div className="bridge-info-tourism-row">
+                            <span className="bridge-info-tourism-label">门票</span>
+                            <span className="bridge-info-tourism-value">{selectedBridge.ticket}</span>
+                          </div>
+                        )}
+                        {selectedBridge.nearbyAttractions && selectedBridge.nearbyAttractions.length > 0 && (
+                          <div className="bridge-info-tourism-row">
+                            <span className="bridge-info-tourism-label">周边景点</span>
+                            <span className="bridge-info-tourism-value">{selectedBridge.nearbyAttractions.join('、')}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

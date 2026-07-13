@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js'
 import type { Bridge } from '../../types/bridge'
+import { createProgressController } from '../../utils/modelLoader'
 
 // ═══════════════════════════════════════════════════════════
 // 类型
@@ -26,7 +27,9 @@ interface Props {
     toggleFlashlight: () => void
     triggerGlitch: () => void
     reset: () => void
+    showSwipeHint: () => void
     isFlashlightOn: boolean
+    isTexturedOnlyOn: boolean
     currentMode: Mode
   } | null>
   onLoad?: () => void
@@ -724,16 +727,16 @@ function ThreeScene({
   const [sharedObj, setSharedObj] = useState<THREE.Group | null>(null)
   useEffect(() => {
     if (loadedRef.current) return
-    // 标准 MTLLoader + OBJLoader 串行加载（和十七孔桥一致）
+    const progressCtrl = createProgressController(onModelProgress)
+
     const mtlLoader = new MTLLoader()
     mtlLoader.setPath(OBJ_DIR)
     mtlLoader.setResourcePath(OBJ_DIR)
     mtlLoader.load(MTL_NAME, (materials) => {
       console.log(`[五亭桥] MTL成功! 材质:`, Object.keys(materials.materials))
-      onModelProgress?.(30)
+      progressCtrl.markMtlLoaded()
       materials.preload()
 
-      // 材质预处理
       Object.values(materials.materials).forEach((m: any) => {
         if (m) {
           m.emissive?.set?.(0x000000)
@@ -742,19 +745,10 @@ function ThreeScene({
         }
       })
 
-      // 本地文件加载太快，需要模拟进度让用户看到过渡
-      // 从 30% 每步增加 3%，间隔 100ms，爬升到 90%
-      let simulated = 30
-      const simTimer = setInterval(() => {
-        simulated = Math.min(90, simulated + 3)
-        onModelProgress?.(simulated)
-      }, 100)
-
       const objLoader = new OBJLoader()
       objLoader.setPath(OBJ_DIR)
       objLoader.setMaterials(materials)
       objLoader.load(OBJ_NAME, (obj) => {
-        // ★ 清除 LineSegments 残留（7条l行导致OBJLoader误生成）
         let removedCount = 0
         obj.traverse((child: any) => {
           if (child.isLineSegments || child.isLine) {
@@ -767,29 +761,22 @@ function ThreeScene({
           }
         })
         if (removedCount > 0) console.log(`[五亭桥] 已清除 ${removedCount} 个LineSegments`)
-        // OBJ 加载完成，但先让模拟进度继续跑一小段时间
-        setTimeout(() => {
-          clearInterval(simTimer)
-          onModelProgress?.(95)
-          setTimeout(() => {
-            loadedRef.current = true
-            setSharedObj(obj)
-            onModelProgress?.(100)
-            onModelLoad?.()
-          }, 150)
-        }, 300)
+        loadedRef.current = true
+        setSharedObj(obj)
+        progressCtrl.markObjLoaded()
+        onModelLoad?.()
       }, (xhr) => {
-        // 真实进度可用时优先用真实进度
-        if (xhr.lengthComputable && xhr.total > 0) {
-          clearInterval(simTimer)
-          const p = 30 + (xhr.loaded / xhr.total) * 65
-          onModelProgress?.(Math.min(95, Math.round(p)))
+        if (xhr.lengthComputable) {
+          progressCtrl.updateObjProgress(xhr.loaded, xhr.total)
         }
       }, (err: Error) => {
-        clearInterval(simTimer)
+        progressCtrl.cancel()
         console.error('[五亭桥] OBJ失败:', err)
       })
-    }, undefined, (err: Error) => console.error('[五亭桥] MTL失败:', err))
+    }, undefined, (err: Error) => {
+      progressCtrl.cancel()
+      console.error('[五亭桥] MTL失败:', err)
+    })
   }, [onModelLoad, onModelProgress])
   const bridgeTransform = useBridgeTransform(sharedObj)
 
@@ -1101,17 +1088,32 @@ export default function WutingqiaoBridge3D({ bridge, onClose, actionsRef, onLoad
     setTexturedOnlyOn(false)
   }, [])
 
+  // ═══ 实景图滑动状态（移到useEffect之前，避免TDZ问题）═══
+  const REAL_IMAGE = 'images/实景图（场景图用）/五亭桥实景图.png'
+  const hasRealImage = true
+  const [showRealImage, setShowRealImage] = useState(false)
+  const [showHint, setShowHint] = useState(false)
+
+  // 滑动提示默认不自动显示，由外部控制（reset后调用showSwipeHint）
+  const showSwipeHint = useCallback(() => {
+    if (hasRealImage && !showRealImage) {
+      setShowHint(true)
+    }
+  }, [hasRealImage, showRealImage])
+
   useEffect(() => {
     if (actionsRef) {
       actionsRef.current = {
         toggleFlashlight: () => setFlashlightEnabled(v => !v),
         triggerGlitch: toggleTexturedOnly,
         reset: resetScene,
+        showSwipeHint,
         isFlashlightOn: flashlightEnabled,
+        isTexturedOnlyOn: texturedOnlyOn,
         currentMode: mode,
       }
     }
-  }, [actionsRef, flashlightEnabled, mode, toggleTexturedOnly, resetScene])
+  }, [actionsRef, flashlightEnabled, texturedOnlyOn, mode, toggleTexturedOnly, resetScene, showSwipeHint])
 
   const canInteract = mode === 'particle'
 
@@ -1229,7 +1231,85 @@ export default function WutingqiaoBridge3D({ bridge, onClose, actionsRef, onLoad
     ? `inset(0 0 ${100 - scanlinePos * 100}% 0)`
     : 'inset(0 0 0 0)'
 
+  // ═══ 实景图滑动交互 ═══
+  const [dragging, setDragging] = useState(false)
+  const dragStartX = useRef(0)
+  const [dragOffset, setDragOffset] = useState(0)
+
+  const onSwipeStart = useCallback((clientX: number) => {
+    if (!hasRealImage) return
+    setDragging(true)
+    dragStartX.current = clientX
+    setDragOffset(0)
+  }, [hasRealImage])
+
+  const onSwipeMove = useCallback((clientX: number, containerWidth: number) => {
+    if (!dragging || !hasRealImage) return
+    const offset = clientX - dragStartX.current
+    const maxOffset = containerWidth
+    if (!showRealImage && offset > 0) {
+      setDragOffset(Math.min(maxOffset, offset))
+    } else if (showRealImage && offset < 0) {
+      setDragOffset(Math.max(-maxOffset, offset))
+    }
+  }, [dragging, showRealImage, hasRealImage])
+
+  const onSwipeEnd = useCallback((containerWidth: number) => {
+    if (!dragging || !hasRealImage) return
+    setDragging(false)
+    const threshold = containerWidth * 0.3
+    if (dragOffset > threshold && !showRealImage) {
+      setShowRealImage(true)
+      setShowHint(false)
+    } else if (dragOffset < -threshold && showRealImage) {
+      setShowRealImage(false)
+    }
+    setDragOffset(0)
+  }, [dragging, dragOffset, showRealImage, hasRealImage])
+
+  const containerRefForSwipe = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
+
+  useEffect(() => {
+    if (containerRefForSwipe.current) {
+      setContainerWidth(containerRefForSwipe.current.offsetWidth)
+    }
+  }, [])
+
+  const currentOffset = showRealImage
+    ? dragOffset + containerWidth
+    : dragOffset
+  const clipLeftPercent = Math.max(0, Math.min(100, (currentOffset / Math.max(containerWidth, 1)) * 100))
+
   return (
+    <div className="relative w-full h-full overflow-hidden" ref={containerRefForSwipe}>
+      {/* ═══ 实景图（底层） ═══ */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          backgroundImage: `url(${REAL_IMAGE})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          zIndex: 1,
+          opacity: hasRealImage ? 1 : 0,
+        }}
+      />
+
+      {/* ═══ 场景图（上层，用 clip-path 从左侧裁剪） ═══ */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          clipPath: hasRealImage ? `inset(0 0 0 ${clipLeftPercent}%)` : 'inset(0 0 0 0)',
+          transition: dragging ? 'none' : 'clip-path 0.4s cubic-bezier(0.3, 0, 0.2, 1)',
+          zIndex: 2,
+        }}
+      >
     <div
         className="sq-container"
         ref={containerRef}
@@ -1458,6 +1538,144 @@ export default function WutingqiaoBridge3D({ bridge, onClose, actionsRef, onLoad
               </div>
             </>
           )}
+        </div>
+      )}
+
+    </div>
+      </div>
+
+      {/* ═══ 垂直扫描线（交界处） ═══ */}
+      {hasRealImage && (dragging || clipLeftPercent > 0) && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: `${clipLeftPercent}%`,
+            width: '3px',
+            transform: 'translateX(-50%)',
+            zIndex: 4,
+            pointerEvents: 'none',
+            background: 'linear-gradient(180deg, transparent 0%, rgba(255, 240, 200, 0.15) 20%, rgba(255, 220, 140, 0.8) 50%, rgba(255, 240, 200, 0.15) 80%, transparent 100%)',
+            boxShadow: '0 0 8px rgba(255, 220, 140, 0.7), 0 0 20px rgba(255, 220, 140, 0.35), -2px 0 6px rgba(255, 240, 200, 0.2), 2px 0 6px rgba(255, 240, 200, 0.2)',
+            animation: 'verticalScanlinePulse 0.6s ease-in-out infinite alternate',
+          }}
+        />
+      )}
+
+      {/* ═══ 左侧边缘手势捕获区（仅场景图模式） ═══ */}
+      {hasRealImage && !showRealImage && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: 60,
+            height: '100%',
+            zIndex: 10,
+            cursor: 'grab',
+          }}
+          onMouseDown={(e) => { e.stopPropagation(); onSwipeStart(e.clientX) }}
+          onTouchStart={(e) => { e.stopPropagation(); onSwipeStart(e.touches[0].clientX) }}
+        />
+      )}
+
+      {/* ═══ 全层手势捕获（实景图模式，可左滑返回） ═══ */}
+      {hasRealImage && showRealImage && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 10,
+            cursor: 'grab',
+          }}
+          onMouseDown={(e) => { e.stopPropagation(); onSwipeStart(e.clientX) }}
+          onTouchStart={(e) => { e.stopPropagation(); onSwipeStart(e.touches[0].clientX) }}
+        />
+      )}
+
+      {/* ═══ 拖拽中全局监听 ═══ */}
+      {dragging && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            cursor: 'grabbing',
+            userSelect: 'none',
+          }}
+          onMouseMove={(e) => onSwipeMove(e.clientX, containerWidth)}
+          onMouseUp={() => onSwipeEnd(containerWidth)}
+          onMouseLeave={() => onSwipeEnd(containerWidth)}
+          onTouchMove={(e) => onSwipeMove(e.touches[0].clientX, containerWidth)}
+          onTouchEnd={() => onSwipeEnd(containerWidth)}
+        />
+      )}
+
+      {/* ═══ 滑动提示箭头 ═══ */}
+      {hasRealImage && showHint && !showRealImage && !dragging && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 8,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 20,
+            pointerEvents: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 4,
+            animation: 'fadeBlink 2s ease-in-out infinite',
+          }}
+        >
+          <div style={{
+            width: 0, height: 0,
+            borderTop: '10px solid transparent',
+            borderBottom: '10px solid transparent',
+            borderLeft: '14px solid #FFFFFF',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+          }} />
+          <span style={{
+            color: '#FFFFFF',
+            fontSize: 12,
+            whiteSpace: 'nowrap',
+            textShadow: '0 2px 6px rgba(0,0,0,0.5)',
+            fontWeight: 500,
+          }}>右滑看实景 →</span>
+        </div>
+      )}
+
+      {/* ═══ 底部圆点指示器 ═══ */}
+      {hasRealImage && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 88,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 20,
+            display: 'flex',
+            gap: 10,
+            pointerEvents: 'none',
+          }}
+        >
+          <div style={{
+            width: showRealImage ? 10 : 28,
+            height: 10,
+            borderRadius: 5,
+            background: showRealImage ? 'rgba(255,255,255,0.35)' : '#FFFFFF',
+            boxShadow: showRealImage ? 'none' : '0 2px 8px rgba(0,0,0,0.4)',
+            transition: 'all 0.3s',
+          }} />
+          <div style={{
+            width: showRealImage ? 28 : 10,
+            height: 10,
+            borderRadius: 5,
+            background: showRealImage ? '#FFFFFF' : 'rgba(255,255,255,0.35)',
+            boxShadow: showRealImage ? '0 2px 8px rgba(0,0,0,0.4)' : 'none',
+            transition: 'all 0.3s',
+          }} />
         </div>
       )}
 

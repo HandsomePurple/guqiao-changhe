@@ -61,28 +61,28 @@
   opacity: 0.85;
 }
 
-/* 内容卡片 — 居中显示，不依赖硬编码 left */
+/* 内容卡片 — 参考卡片详情页布局：左侧场景图 + 右侧文字 */
 .time-river-card {
   position: absolute;
   top: 60px;
   left: 50%;
   transform: translateX(-50%);
-  width: 500px;
+  width: 980px;
   height: 680px;
-  background: transparent;
+  background: rgba(255, 252, 245, 0.72);
   border-radius: 14px;
   border: 1px solid rgba(211, 184, 133, 0.28);
   box-shadow:
     0 0 80px rgba(211, 184, 133, 0.1),
     0 16px 72px rgba(0, 0, 0, 0.2);
   overflow: hidden;
-  animation: trCardIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: trCardIn 0.35s ease-out both;
   display: flex;
   flex-direction: row;
 }
 
-/* 底图 - 千河桥影地图铺满 */
-.time-river-card::before {
+/* 底图 - 千河桥影地图铺满左侧区域（保持原定位不变） */
+.time-river-left::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -97,13 +97,13 @@
 .time-river-card::-webkit-scrollbar-thumb { background: rgba(211, 184, 133, 0.35); border-radius: 2px; }
 
 @keyframes trCardIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(24px) scale(0.96); }
-  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-/* ═══ 左侧：河流 + 桥图 + WebGL 水波纹 ═══ */
+/* ═══ 左侧：河流 + 桥图 + WebGL 水波纹（保持原场景图大小和定位）═══ */
 .time-river-left {
-  flex: 0 0 52%;
+  flex: 0 0 500px;
   position: relative;
   z-index: 1;
   overflow: hidden;
@@ -130,8 +130,9 @@
   z-index: 2;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.8s ease-out;
   filter: drop-shadow(0 2px 10px rgba(201, 168, 130, 0.3));
+  will-change: opacity;
 }
 
 .tr-bridge-img.tr-bridge-visible {
@@ -156,8 +157,9 @@
     0 0 8px rgba(170, 140, 110, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.22);
   opacity: 0;
-  transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.3s;
+  transition: opacity 0.6s ease-out;
   pointer-events: none;
+  will-change: opacity;
 }
 
 .tr-bridge-label.tr-bridge-visible {
@@ -176,16 +178,163 @@
   text-orientation: upright;
 }
 
-/* ═══ 右侧：文字内容 ═══ */
+/* ═══ 引导提示 ═══ */
+.tr-hint-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(240, 228, 210, 0.45);
+  border: 1px solid rgba(200, 175, 140, 0.3);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.tr-hint-icon {
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right: 7px solid #B8956A;
+}
+
+.tr-hint-arrow-left {
+  display: inline-block;
+}
+
+.tr-hint-text {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 12px;
+  color: #7A6B5A;
+  letter-spacing: 1px;
+  line-height: 1.4;
+}
+
+/* ═══ 河流顶部引导箭头 ═══ */
+.tr-top-arrow {
+  position: absolute;
+  top: 20px;
+  left: 30%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  animation: trTopArrowBounce 1.8s ease-in-out infinite;
+}
+
+.tr-top-arrow-icon {
+  font-size: 16px;
+  color: #8B7355;
+  line-height: 1;
+  text-shadow: 0 1px 3px rgba(255, 248, 240, 0.7);
+}
+
+.tr-top-arrow-text {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 10px;
+  color: #7A6B5A;
+  letter-spacing: 2px;
+  padding: 2px 8px;
+  background: rgba(250, 242, 230, 0.6);
+  border: 1px solid rgba(200, 175, 140, 0.3);
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+@keyframes trTopArrowBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+  50% { transform: translateX(-50%) translateY(6px); opacity: 0.6; }
+}
+
+/* ═══ 场景图右侧：时期文字叠加 ═══ */
+.time-river-periods-overlay {
+  position: absolute;
+  right: 12px;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding: 40px 0 100px;
+  pointer-events: none;
+}
+
+.tr-period-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.tr-period-overlay.tr-period-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.tr-period-title-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.tr-title-era-overlay {
+  font-family: '汇文明朝体', serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4E3222;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 3px rgba(255, 248, 240, 0.6);
+}
+
+.tr-title-kw-overlay {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 9px;
+  color: #6B5040;
+  letter-spacing: 1px;
+  padding: 1px 6px;
+  background: rgba(240, 232, 218, 0.45);
+  border: 1px solid rgba(180, 150, 110, 0.25);
+  border-radius: 3px;
+}
+
+/* ═══ 右侧：文字内容（参考卡片详情页风格）═══ */
 .time-river-right {
-  flex: 0 0 48%;
+  flex: 1;
   position: relative;
   z-index: 5;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 36px;
-  padding: 48px 24px 40px 12px;
+  gap: 20px;
+  padding: 32px 24px 32px 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
+  background: rgba(255, 252, 245, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.time-river-right::-webkit-scrollbar {
+  width: 3px;
+}
+.time-river-right::-webkit-scrollbar-thumb {
+  background: rgba(180, 150, 110, 0.35);
+  border-radius: 2px;
+}
+.time-river-right::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* ── 时期区块 ── */
@@ -194,11 +343,17 @@
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
   opacity: 0;
   transform: translateY(8px);
-  transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1),
-              transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(180, 150, 110, 0.18);
+}
+
+.tr-period-block:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .tr-period-block.tr-period-visible {
@@ -210,61 +365,119 @@
 .tr-period-title {
   display: flex;
   align-items: baseline;
-  gap: 0;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-/* 时期名称 — 直接放在卡片上，无背景 */
+/* 时期名称 */
 .tr-title-era {
   font-family: '汇文明朝体', serif;
   font-size: 15px;
   font-weight: 500;
-  color: #4E3222;
-  letter-spacing: 3px;
-  text-shadow: 0 1px 2px rgba(255, 248, 240, 0.25);
-  line-height: 1;
+  color: #5A4230;
+  letter-spacing: 2px;
+  line-height: 1.2;
 }
 
-/* 分隔点（已移除，保留以备后续使用）
-.tr-title-sep {
-  color: rgba(232, 213, 176, 0.4);
-  font-size: 13px;
+/* 年代范围 */
+.tr-title-range {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 11px;
+  color: #9B8B78;
+  letter-spacing: 1px;
+  opacity: 0.7;
 }
-*/
 
-/* 关键字小标签 — 浅色，紧挨时期文字右侧 */
+/* 关键字小标签 */
 .tr-title-kw {
   font-family: 'Noto Serif SC', serif;
   font-size: 10px;
+  color: #8B7B6B;
+  letter-spacing: 1px;
+  display: inline-block;
+  padding: 1px 8px;
+  background: rgba(210, 195, 170, 0.25);
+  border: 1px solid rgba(180, 150, 110, 0.20);
+  border-radius: 4px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* 信息区块 */
+.tr-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 信息标题 */
+.tr-info-title {
+  font-family: '汇文明朝体', serif;
+  font-size: 13px;
+  font-weight: 500;
   color: #6B5040;
   letter-spacing: 1.5px;
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 6px;
-  background: rgba(240, 232, 218, 0.38);
-  border: 1px solid rgba(180, 150, 110, 0.22);
-  border-radius: 3px;
+  padding-left: 6px;
+  border-left: 2px solid rgba(201, 160, 110, 0.6);
+  line-height: 1.2;
+}
+
+/* 信息正文 */
+.tr-info-text {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #5A4A3A;
+  letter-spacing: 0.5px;
+  text-align: justify;
+}
+
+/* 技术亮点列表 */
+.tr-info-list {
+  margin: 0;
+  padding: 0 0 0 16px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tr-info-list li {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #5A4A3A;
+  letter-spacing: 0.5px;
+  position: relative;
+}
+
+.tr-info-list li::before {
+  content: '◆';
+  position: absolute;
+  left: -14px;
+  top: 0;
+  font-size: 8px;
+  color: rgba(201, 160, 110, 0.7);
+}
+
+/* 代表桥梁标签 */
+.tr-rep-bridges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tr-rep-bridge-tag {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 11px;
+  color: #6B5040;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  background: rgba(254, 252, 246, 0.8);
+  border: 1px solid rgba(201, 160, 110, 0.3);
+  border-radius: 4px;
   line-height: 1.4;
   white-space: nowrap;
-  text-shadow: none;
-}
-
-/* 技术描述文字 — 暗色半透明底色 + 淡入 */
-.tr-tech-text {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 10px;
-  line-height: 1.4;
-  color: #FFFFFF;
-  letter-spacing: 1.2px;
-  padding: 8px 10px;
-  background: rgba(15, 12, 8, 0.38);
-  border-radius: 5px;
-  border: 1px solid rgba(211, 184, 133, 0.15);
-  opacity: 0;
-  transition: opacity 0.8s ease 0.4s;
-}
-
-.tr-period-block.tr-period-visible .tr-tech-text {
-  opacity: 1;
 }
 
 /* ═══ 返回按钮 ═══ */

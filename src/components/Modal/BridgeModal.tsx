@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { Bridge } from '../../types/bridge'
 import { BRIDGE_TYPE_LABELS } from '../../data/bridges'
 import BridgeCanvas3D from './BridgeCanvas3D'
+import SwipeView from './SwipeView'
 
 interface Props {
   bridge: Bridge
@@ -124,74 +125,80 @@ export default function BridgeModal({ bridge, onClose, onOpenPanorama, isUnlocke
             className="relative flex-shrink-0 overflow-hidden"
             style={{
               width: 480,
+              height: 640,
               background: '#F0EBE3',
             }}
           >
-            {/* ═══ 十七孔桥：背景图 + 桥PNG叠层 + 回切热区 ═══ */}
-            {isShiqikong && (
-              <>
-                {/* Layer 0: 背景底图 — 始终可见 */}
-                <div
-                  className="absolute inset-0 z-[1] pointer-events-none"
-                  style={{
-                    backgroundImage: `url(images/shiqikong-bg.webp)`,
-                    backgroundSize: 'contain',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                  }}
-                />
-
-                {/* Layer 1: 桥 PNG 图片 — 静态模式可见/可点击 */}
-                <div
-                  className={`absolute inset-0 z-[2] bridge-png-layer ${
-                    transitionPhase === 'shake' ? 'shaking' : ''
-                  } ${
-                    transitionPhase === 'dissolving' ? 'dissolving' : ''
-                  } ${
-                    transitionPhase === 'emerging' ? 'emerging' : ''
-                  }`}
-                  style={{
-                    backgroundImage: `url(images/shiqikong-bridge.webp)`,
-                    backgroundSize: 'contain',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    opacity: pngInlineOpacity,
-                    cursor: pngClickable ? 'pointer' : 'default',
-                    pointerEvents: pngClickable ? 'auto' : 'none',
-                  }}
-                  onClick={pngClickable ? enterParticleMode : undefined}
-                  title={pngClickable ? '点击转换为粒子模型' : undefined}
-                />
-
-                {/* Layer 2: 回切热区 — 粒子模式下可点击桥位区域退回静态图 */}
-                {isParticleMode && transitionPhase === 'idle' && (
+            <SwipeView
+              hasRealImage={!!bridge.realImage}
+              realImageUrl={bridge.realImage}
+            >
+              {/* ═══ 十七孔桥：背景图 + 桥PNG叠层 + 回切热区 ═══ */}
+              {isShiqikong && (
+                <>
+                  {/* Layer 0: 背景底图 — 始终可见 */}
                   <div
-                    className="absolute inset-0 z-[8] cursor-pointer"
-                    onClick={revertToStatic}
-                    title="点击退回静态图"
-                  />
-                )}
-
-                {/* Layer 3: 白光闪现层 */}
-                {transitionPhase === 'flashing' && (
-                  <div
-                    className="absolute inset-0 z-[9] pointer-events-none"
+                    className="absolute inset-0 z-[1] pointer-events-none"
                     style={{
-                      background: 'rgba(255,255,255,0.6)',
-                      animation: 'bridgeWhiteFlash 0.22s ease-out forwards',
+                      backgroundImage: `url(images/shiqikong-bg.webp)`,
+                      backgroundSize: 'contain',
+                      backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat',
                     }}
                   />
-                )}
-              </>
-            )}
 
-            {/* 3D 场景 — 十七孔桥静态模式不渲染，粒子模式才挂载；其他桥始终显示 */}
-            {(!isShiqikong || isParticleMode) && (
-              <BridgeCanvas3D
-                bridge={bridge}
-                isParticleMode={isShiqikong ? isParticleMode : undefined}
-              />
-            )}
+                  {/* Layer 1: 桥 PNG 图片 — 静态模式可见/可点击 */}
+                  <div
+                    className={`absolute inset-0 z-[2] bridge-png-layer ${
+                      transitionPhase === 'shake' ? 'shaking' : ''
+                    } ${
+                      transitionPhase === 'dissolving' ? 'dissolving' : ''
+                    } ${
+                      transitionPhase === 'emerging' ? 'emerging' : ''
+                    }`}
+                    style={{
+                      backgroundImage: `url(images/shiqikong-bridge.webp)`,
+                      backgroundSize: 'contain',
+                      backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat',
+                      opacity: pngInlineOpacity,
+                      cursor: pngClickable ? 'pointer' : 'default',
+                      pointerEvents: pngClickable ? 'auto' : 'none',
+                    }}
+                    onClick={pngClickable ? enterParticleMode : undefined}
+                    title={pngClickable ? '点击转换为粒子模型' : undefined}
+                  />
+
+                  {/* Layer 2: 回切热区 — 粒子模式下可点击桥位区域退回静态图 */}
+                  {isParticleMode && transitionPhase === 'idle' && (
+                    <div
+                      className="absolute inset-0 z-[8] cursor-pointer"
+                      onClick={revertToStatic}
+                      title="点击退回静态图"
+                    />
+                  )}
+
+                  {/* Layer 3: 白光闪现层 */}
+                  {transitionPhase === 'flashing' && (
+                    <div
+                      className="absolute inset-0 z-[9] pointer-events-none"
+                      style={{
+                        background: 'rgba(255,255,255,0.6)',
+                        animation: 'bridgeWhiteFlash 0.22s ease-out forwards',
+                      }}
+                    />
+                  )}
+                </>
+              )}
+
+              {/* 3D 场景 — 十七孔桥静态模式不渲染，粒子模式才挂载；其他桥始终显示 */}
+              {(!isShiqikong || isParticleMode) && (
+                <BridgeCanvas3D
+                  bridge={bridge}
+                  isParticleMode={isShiqikong ? isParticleMode : undefined}
+                />
+              )}
+            </SwipeView>
           </div>
 
           {/* ──── 右侧：文字信息面板 ──── */}

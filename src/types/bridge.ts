@@ -44,8 +44,14 @@ export interface Bridge {
   panoramaPath?: string
   // 海报背景图
   posterImage?: string
+  // 实景图（用于左右滑动切换）
+  realImage?: string
   /** 技术指标 — 时光长河用 */
   maxSpan?: string      // 最大跨度 e.g. "37m", "1650m"
   maxHeight?: string    // 最大高度 e.g. "565m"
   maxLength?: string    // 最大长度 e.g. "165km"
+  /** 文旅信息 */
+  openingHours?: string   // 开放时间
+  ticket?: string         // 门票信息
+  nearbyAttractions?: string[]  // 周边景点
 }

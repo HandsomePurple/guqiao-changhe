@@ -38,17 +38,20 @@ const LABEL_DEFAULTS: Record<string, { top: number; left: number }> = {
   gangzhuao: { top: 83, left: 96 },
 }
 
-export default function TimeRiver({ onClose }: Props) {
+export default function TimeRiver({ bridges, onClose }: Props) {
   const [periodTriggered, setPeriodTriggered] = useState([false, false, false, false])
   const [bridgeTriggered, setBridgeTriggered] = useState([false, false, false, false, false])
   const [labelPositions, setLabelPositions] = useState(LABEL_DEFAULTS)
   const [editorOpen, setEditorOpen] = useState(false)
   const [ripples, setRipples] = useState<{ id: number; x: number; y: number }[]>([])
+  const [glReady, setGlReady] = useState(false)
   const rippleIdRef = useRef(0)
   const lastRippleRef = useRef(0)
   const cardRef = useRef<HTMLDivElement>(null)
   const mouseRef = useRef<WaterRippleMouse>({ x: 0, y: 0, inside: false })
   const leftRef = useRef<HTMLDivElement>(null)
+  const rightRef = useRef<HTMLDivElement>(null)
+  const periodRefs = useRef<(HTMLDivElement | null)[]>([null, null, null, null])
 
   // ESC 关闭（编辑器中先关编辑器）
   useEffect(() => {
@@ -61,6 +64,36 @@ export default function TimeRiver({ onClose }: Props) {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [onClose, editorOpen])
+
+  // 延迟初始化 WebGL，避免影响卡片入场性能
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setGlReady(true)
+    }, 200)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // 监听时期触发，自动滚动右侧区域到对应位置
+  useEffect(() => {
+    const rightEl = rightRef.current
+    if (!rightEl) return
+
+    for (let i = periodTriggered.length - 1; i >= 0; i--) {
+      if (periodTriggered[i]) {
+        const periodEl = periodRefs.current[i]
+        if (periodEl) {
+          const rightRect = rightEl.getBoundingClientRect()
+          const periodRect = periodEl.getBoundingClientRect()
+          const scrollPosition = periodEl.offsetTop - rightRect.height / 2 + periodRect.height / 2
+          rightEl.scrollTo({
+            top: Math.max(0, scrollPosition),
+            behavior: 'smooth'
+          })
+        }
+        break
+      }
+    }
+  }, [periodTriggered])
 
   // Cmd+Shift+E 切换位置编辑器
   useEffect(() => {
@@ -86,9 +119,9 @@ export default function TimeRiver({ onClose }: Props) {
 
     mouseRef.current = { x, y, inside: true }
 
-    // 水波纹 PNG 涟漪 — 每 180ms 生成一个
+    // 水波纹 PNG 涟漪 — 每 300ms 生成一个（降低频率）
     const now = Date.now()
-    if (now - lastRippleRef.current > 180) {
+    if (now - lastRippleRef.current > 300) {
       lastRippleRef.current = now
       const cardEl = cardRef.current
       if (cardEl) {
@@ -195,75 +228,135 @@ export default function TimeRiver({ onClose }: Props) {
       )}
 
       <div className="time-river-card" onClick={(e) => e.stopPropagation()}>
-        {/* 桥 PNG 叠加层 — 每座桥独立触发 */}
-        {BRIDGE_TRIGGERS.map((bt, i) =>
-          bt.images.map((img, j) => (
-            <img
-              key={`${bt.id}-${j}`}
-              src={`images/${img}`}
-              className={`tr-bridge-img tr-bridge-${bt.id}${j > 0 ? ` tr-bridge-${bt.id}-${j}` : ''}${bridgeTriggered[i] ? ' tr-bridge-visible' : ''}`}
-              alt=""
-            />
-          ))
-        )}
-
-        {/* 桥名标签 — 仿首页标记外框，仅竖排桥名 */}
-        {BRIDGE_TRIGGERS.map((bt, i) => {
-          const pos = labelPositions[bt.id] || { top: bt.threshold * 100, left: 8 }
-          return (
-            <div
-              key={`label-${bt.id}`}
-              className={`tr-bridge-label${bridgeTriggered[i] ? ' tr-bridge-visible' : ''}`}
-              style={{ top: `${pos.top}%`, left: `${pos.left}px` }}
-            >
-              <span className="tr-bridge-label-text">{bt.label}</span>
-            </div>
-          )
-        })}
-
-        {/* WebGL 河流层 + 湖面微闪 */}
-        <WaterRippleGL mouseRef={mouseRef} />
-
-        {/* 鼠标涟漪 — 水波纹 PNG 从鼠标位置扩散 */}
-        <div className="tr-ripple-layer" ref={cardRef}>
-          {ripples.map(r => (
-            <img
-              key={r.id}
-              src="images/水波纹.webp"
-              className="tr-ripple-dot"
-              style={{ left: r.x, top: r.y }}
-              alt=""
-            />
-          ))}
-        </div>
-
-        {/* ═══ 左侧：河流交互区 ═══ */}
+        {/* ═══ 左侧：河流交互区（包含所有场景图元素，保持原定位）═══ */}
         <div
           className="time-river-left"
           ref={leftRef}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
-        />
+        >
+          {/* 顶部引导箭头 */}
+          <div className="tr-top-arrow">
+            <span className="tr-top-arrow-icon">▼</span>
+            <span className="tr-top-arrow-text">沿河流向下探索</span>
+          </div>
+          {/* 桥 PNG 叠加层 — 每座桥独立触发 */}
+          {BRIDGE_TRIGGERS.map((bt, i) =>
+            bt.images.map((img, j) => (
+              <img
+                key={`${bt.id}-${j}`}
+                src={`images/${img}`}
+                className={`tr-bridge-img tr-bridge-${bt.id}${j > 0 ? ` tr-bridge-${bt.id}-${j}` : ''}${bridgeTriggered[i] ? ' tr-bridge-visible' : ''}`}
+                alt=""
+              />
+            ))
+          )}
 
-        {/* ═══ 右侧：四个时期文字 ═══ */}
-        <div className="time-river-right">
+          {/* 桥名标签 — 仿首页标记外框，仅竖排桥名 */}
+          {BRIDGE_TRIGGERS.map((bt, i) => {
+            const pos = labelPositions[bt.id] || { top: bt.threshold * 100, left: 8 }
+            return (
+              <div
+                key={`label-${bt.id}`}
+                className={`tr-bridge-label${bridgeTriggered[i] ? ' tr-bridge-visible' : ''}`}
+                style={{ top: `${pos.top}%`, left: `${pos.left}px` }}
+              >
+                <span className="tr-bridge-label-text">{bt.label}</span>
+              </div>
+            )
+          })}
+
+          {/* WebGL 河流层 + 湖面微闪（延迟初始化） */}
+          {glReady && <WaterRippleGL mouseRef={mouseRef} />}
+
+          {/* 鼠标涟漪 — 水波纹 PNG 从鼠标位置扩散 */}
+          <div className="tr-ripple-layer" ref={cardRef}>
+            {ripples.map(r => (
+              <img
+                key={r.id}
+                src="images/水波纹.webp"
+                className="tr-ripple-dot"
+                style={{ left: r.x, top: r.y }}
+                alt=""
+              />
+            ))}
+          </div>
+
+          {/* ═══ 场景图右侧：时期文字叠加 ═══ */}
+          <div className="time-river-periods-overlay">
+            {PERIODS.map((period, i) => {
+              const cfg = PERIOD_CONFIG[period]
+              const titleKW = cfg.techSummary[0] || ''
+              return (
+                <div
+                  key={period}
+                  className={`tr-period-overlay${periodTriggered[i] ? ' tr-period-visible' : ''}`}
+                >
+                  <div className="tr-period-title-overlay">
+                    <span className="tr-title-era-overlay">{cfg.label}</span>
+                    <span className="tr-title-kw-overlay">{titleKW}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ═══ 右侧：桥梁发展历史介绍 ═══ */}
+        <div className="time-river-right" ref={rightRef}>
+          {/* 引导提示 */}
+          <div className="tr-hint-box">
+            <span className="tr-hint-icon tr-hint-arrow-left"></span>
+            <span className="tr-hint-text">沿河流向下移动鼠标，探索桥梁历史</span>
+          </div>
           {PERIODS.map((period, i) => {
             const cfg = PERIOD_CONFIG[period]
             const titleKW = cfg.techSummary[0] || ''
-            const techText = (cfg.techSummary[1] || '').replace(/^关键技术：/, '')
 
             return (
               <div
                 key={period}
                 className={`tr-period-block${periodTriggered[i] ? ' tr-period-visible' : ''}`}
+                ref={el => { periodRefs.current[i] = el }}
               >
+                {/* 时期标题 */}
                 <div className="tr-period-title">
                   <span className="tr-title-era">{cfg.label}</span>
+                  <span className="tr-title-range">{cfg.range}</span>
                   <span className="tr-title-kw">{titleKW}</span>
                 </div>
-                {techText && (
-                  <div className="tr-tech-text">{techText}</div>
-                )}
+
+                {/* 时代背景 */}
+                <div className="tr-info-section">
+                  <div className="tr-info-title">时代背景</div>
+                  <div className="tr-info-text">{cfg.background}</div>
+                </div>
+
+                {/* 技术亮点 */}
+                <div className="tr-info-section">
+                  <div className="tr-info-title">技术亮点</div>
+                  <ul className="tr-info-list">
+                    {cfg.techHighlights.map((h, idx) => (
+                      <li key={idx}>{h}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* 代表性桥梁 */}
+                <div className="tr-info-section">
+                  <div className="tr-info-title">代表桥梁</div>
+                  <div className="tr-rep-bridges">
+                    {cfg.representativeBridges.map((bid) => {
+                      const b = bridges.find(br => br.id === bid)
+                      if (!b) return null
+                      return (
+                        <span key={bid} className="tr-rep-bridge-tag">
+                          {b.name}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
             )
           })}

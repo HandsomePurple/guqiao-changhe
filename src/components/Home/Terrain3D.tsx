@@ -52,11 +52,23 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`
 }
 
+/* 有3D模型的桥 */
+const MODEL_BRIDGE_IDS = ['shiqikong', 'wuting', 'chengyang-yongji']
+/* 有线稿图的桥 */
+const LINE_DRAWING_BRIDGE_IDS = [
+  'zhaozhou', 'wuhan-changjiang', 'chaotianmen', 'luoyang-bridge', 'guangji',
+  'tiane-longtan', 'gangzhu-ao', 'beijian', 'anping', 'baodai', 'beipanjiang',
+  'lugou', 'luding', 'siduh', 'aizhai', 'hangzhouwan', 'jianshui-shuanglong',
+  'lhasa-liuwu', 'changsha-juzizhou', 'haikou-shiji', 'jihong', 'fengqiao', 'lanzhou-zhongshan',
+]
+
 function BridgeMarker({
   bridge,
   worldPos,
   isSelected,
   isSpecial,
+  tier,
+  animate,
   onClick,
   onHoverEnter,
   onHoverLeave,
@@ -66,6 +78,8 @@ function BridgeMarker({
   worldPos: THREE.Vector3
   isSelected: boolean
   isSpecial: boolean
+  tier: 'model' | 'lineDrawing' | 'normal'
+  animate: boolean
   onClick: (b: Bridge) => void
   onHoverEnter: () => void
   onHoverLeave: () => void
@@ -80,10 +94,8 @@ function BridgeMarker({
   const pinOuter = isSelected ? 15 : 13
   const pinInner = isSelected ? 7 : 6
 
-  // 「分类」模式下从分类色派生全部颜色
   const c = categoryColor
 
-  // 矩形背景+边框 — 分类模式高饱和度，默认暖橙
   const bg = c
     ? (isSelected ? hexToRgba(c, 0.50) : isHovered ? hexToRgba(c, 0.38) : hexToRgba(c, 0.28))
     : (isSelected ? 'rgba(200,182,220,0.50)' : isHovered ? 'rgba(200,182,220,0.38)' : 'rgba(200,182,220,0.28)')
@@ -91,12 +103,10 @@ function BridgeMarker({
     ? (isSelected ? `1px solid ${hexToRgba(c, 0.50)}` : isHovered ? `1px solid ${hexToRgba(c, 0.40)}` : `1px solid ${hexToRgba(c, 0.28)}`)
     : (isSelected ? '1px solid rgba(206,183,160,0.50)' : isHovered ? '1px solid rgba(206,183,160,0.40)' : '1px solid rgba(206,183,160,0.28)')
 
-  // 阴影（常态呼吸发光由 CSS .glow-breathing 处理）
   const shadow = c
     ? (isSelected ? `0 0 5px 3px rgba(255,210,60,0.95), 0 0 12px 2px rgba(255,180,40,0.65), 0 0 24px rgba(255,160,30,0.35)` : isHovered ? 'none' : undefined)
     : (isSelected ? '0 0 5px 3px rgba(255,210,60,0.95), 0 0 12px 2px rgba(255,180,40,0.65), 0 0 24px rgba(255,160,30,0.35)' : isHovered ? 'none' : undefined)
 
-  // 圆圈+首字
   const circleBg = c
     ? (isSelected ? hexToRgba(c, 0.52) : isHovered ? hexToRgba(c, 0.48) : hexToRgba(c, 0.38))
     : (isSelected ? 'rgba(250,246,238,0.52)' : isHovered ? 'rgba(250,246,238,0.48)' : 'rgba(250,246,238,0.38)')
@@ -105,10 +115,8 @@ function BridgeMarker({
     : (isSelected ? '1px solid rgba(218,208,195,0.42)' : isHovered ? '1px solid rgba(218,208,195,0.35)' : '1px solid rgba(218,208,195,0.25)')
   const firstCharColor = c ? '#FFFFFF' : '#6B5B8A'
 
-  // 桥名文字 — 始终使用常态棕色，不跟随分类色
   const nameColor = '#3D2550'
 
-  // 定位 pin
   const pinBorderColor = c
     ? (isSelected ? `2px solid ${hexToRgba(c, 0.55)}` : `2px solid ${hexToRgba(c, 0.42)}`)
     : (isSelected ? '2px solid rgba(140,128,155,0.55)' : '2px solid rgba(150,138,162,0.42)')
@@ -117,12 +125,54 @@ function BridgeMarker({
     : (isSelected ? '0 0 10px rgba(140,128,155,0.25)' : '0 0 6px rgba(150,138,162,0.10)')
   const pinInnerBg = c || (isSelected ? '#6B5D7A' : '#8A7D95')
 
+  const zIndexRange = tier === 'model' ? [950, 999] : tier === 'lineDrawing' ? [800, 949] : [600, 799]
+  const baseZIndex = tier === 'model' ? 950 : tier === 'lineDrawing' ? 800 : 600
+  const innerRef = useRef<HTMLDivElement>(null)
+
+  // 强制设置外层容器 z-index（覆盖 drei 的 zIndexRange 分配，确保层级正确）
+  useEffect(() => {
+    if (!innerRef.current) return
+    let container: HTMLElement | null = innerRef.current.parentElement
+    while (container) {
+      const style = getComputedStyle(container)
+      if (style.position === 'absolute' && style.transform !== 'none') break
+      container = container.parentElement
+    }
+    if (container) {
+      container.style.zIndex = String(baseZIndex)
+    }
+  }, [baseZIndex])
+
+  // hover 时提升 z-index 到最高层
+  useEffect(() => {
+    if (!isHovered || !innerRef.current) return
+    let container: HTMLElement | null = innerRef.current.parentElement
+    while (container) {
+      const style = getComputedStyle(container)
+      if (style.position === 'absolute' && style.transform !== 'none') break
+      container = container.parentElement
+    }
+    if (!container) return
+
+    let raf: number
+    const setZ = () => {
+      if (container) container.style.zIndex = '5000'
+      raf = requestAnimationFrame(setZ)
+    }
+    setZ()
+
+    return () => {
+      cancelAnimationFrame(raf)
+      if (container) container.style.zIndex = String(baseZIndex)
+    }
+  }, [isHovered, baseZIndex])
+
   return (
-    <Html position={worldPos} center distanceFactor={8} zIndexRange={isSpecial ? [600, 999] : [110, 500]}>
-      <div style={{ position: 'relative', cursor: isSpecial ? 'pointer' : 'default', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <Html position={worldPos} center distanceFactor={8} zIndexRange={zIndexRange}>
+      <div ref={innerRef} style={{ position: 'relative', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div
-          className={`bridge-3d-marker${isSelected ? ' selected' : ''}${!isHovered ? ' glow-breathing' : ''}`}
-          onClick={(e) => { e.stopPropagation(); if (isSpecial) onClick(bridge) }}
+          className={`bridge-3d-marker${isSelected ? ' selected' : ''}${animate && !isHovered ? ' glow-breathing' : ''}`}
+          onClick={(e) => { e.stopPropagation(); onClick(bridge) }}
           onMouseEnter={() => { setIsHovered(true); onHoverEnter() }}
           onMouseLeave={() => { setIsHovered(false); onHoverLeave() }}
           style={{
@@ -143,7 +193,6 @@ function BridgeMarker({
             transform: isHovered ? 'scale(1.08)' : 'scale(1)',
           }}
         >
-          {/* 顶部圆圈 — 首字 */}
           <div style={{
             width: circleSize,
             height: circleSize,
@@ -167,7 +216,6 @@ function BridgeMarker({
               {firstChar}
             </span>
           </div>
-          {/* 下方 — 竖排完整桥名 */}
           <span style={{
             fontFamily: "'汇文明朝体', serif",
             fontSize: labelFontSize,
@@ -182,7 +230,6 @@ function BridgeMarker({
             {name}
           </span>
         </div>
-        {/* 定位图标 — 双层圆圈 */}
         <div
           className="bridge-3d-pin"
           style={{
@@ -215,14 +262,51 @@ function BridgeMarker({
    ══════════════════════════════════════════════ */
 function HoverCard({ bridge, worldPos }: { bridge: Bridge; worldPos: THREE.Vector3 }) {
   const big = bridge.id === 'shiqikong'
-  // 赵州桥、十七孔桥的卡片在图标右侧，其他桥保持在上方
   const cardRight = bridge.id === 'zhaozhou' || bridge.id === 'shiqikong'
+  const { camera, size } = useThree()
+  
+  const cardOffset = useMemo(() => {
+    const vec = worldPos.clone()
+    vec.project(camera)
+    
+    const sx = (vec.x * 0.5 + 0.5) * size.width
+    const sy = (-vec.y * 0.5 + 0.5) * size.height
+    
+    const cardW = big ? 280 : 180
+    const cardH = big ? 160 : 100
+    const margin = 40
+    
+    let offsetX = 0
+    let offsetY = 0
+    
+    if (cardRight) {
+      if (sx + cardW / 2 > size.width - margin) {
+        offsetX = -(sx + cardW / 2 - (size.width - margin))
+      }
+    } else {
+      if (sx + cardW / 2 > size.width - margin) {
+        offsetX = -(sx + cardW / 2 - (size.width - margin))
+      } else if (sx - cardW / 2 < margin) {
+        offsetX = margin - (sx - cardW / 2)
+      }
+    }
+    
+    if (sy + cardH + margin > size.height) {
+      offsetY = -(sy + cardH + margin - size.height)
+    } else if (sy < cardH + margin) {
+      offsetY = cardH + margin - sy
+    }
+    
+    return { offsetX, offsetY }
+  }, [camera, size, worldPos, big, cardRight])
+  
   return (
     <Html position={worldPos} center distanceFactor={8} zIndexRange={[9000, 9999]} style={{ pointerEvents: 'none' }}>
       <div style={{
         position: 'relative',
         pointerEvents: 'none',
         animation: 'hcFadeIn 0.18s ease',
+        transform: `translate(${cardOffset.offsetX}px, ${cardOffset.offsetY}px)`,
       }}>
         <div style={{
           position: 'absolute',
@@ -427,6 +511,214 @@ function HoverCard({ bridge, worldPos }: { bridge: Bridge; worldPos: THREE.Vecto
                 }}
               />
             )}
+            {/* 北涧桥线稿图 */}
+            {bridge.id === 'beijian' && (
+              <img
+                src="images/线稿图/北涧桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 安平桥线稿图 */}
+            {bridge.id === 'anping' && (
+              <img
+                src="images/线稿图/安平桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 宝带桥线稿图 */}
+            {bridge.id === 'baodai' && (
+              <img
+                src="images/线稿图/宝带桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 北盘江第一桥线稿图 */}
+            {bridge.id === 'beipanjiang' && (
+              <img
+                src="images/线稿图/北盘江第一桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 卢沟桥线稿图 */}
+            {bridge.id === 'lugou' && (
+              <img
+                src="images/线稿图/卢沟桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 泸定桥线稿图 */}
+            {bridge.id === 'luding' && (
+              <img
+                src="images/线稿图/泸定桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 四渡河大桥线稿图 */}
+            {bridge.id === 'siduh' && (
+              <img
+                src="images/线稿图/四渡河桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 矮寨大桥线稿图 */}
+            {bridge.id === 'aizhai' && (
+              <img
+                src="images/线稿图/矮寨大桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 杭州湾跨海大桥线稿图 */}
+            {bridge.id === 'hangzhouwan' && (
+              <img
+                src="images/线稿图/杭州湾跨海大桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 建水双龙桥线稿图 */}
+            {bridge.id === 'jianshui-shuanglong' && (
+              <img
+                src="images/线稿图/建水双龙桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 拉萨柳梧大桥线稿图 */}
+            {bridge.id === 'lhasa-liuwu' && (
+              <img
+                src="images/线稿图/拉萨柳梧大桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 长沙橘子洲大桥线稿图 */}
+            {bridge.id === 'changsha-juzizhou' && (
+              <img
+                src="images/线稿图/长沙橘子洲大桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 海口世纪大桥线稿图 */}
+            {bridge.id === 'haikou-shiji' && (
+              <img
+                src="images/线稿图/海口世纪大桥.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 霁虹桥线稿图 */}
+            {bridge.id === 'jihong' && (
+              <img
+                src="images/线稿图/霁虹桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 枫桥线稿图 */}
+            {bridge.id === 'fengqiao' && (
+              <img
+                src="images/线稿图/枫桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+            {/* 兰州黄河铁桥线稿图 */}
+            {bridge.id === 'lanzhou-zhongshan' && (
+              <img
+                src="images/线稿图/兰州黄河铁桥线稿图.png"
+                alt=""
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  marginTop: 4,
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
             {/* 三角箭头 */}
             <div style={{
               position: 'absolute',
@@ -491,6 +783,7 @@ function CameraController({
   localCam,
   focusTarget,
   camOverride,
+  calibrateMode,
   onFocusDone,
   onCameraUpdate,
 }: {
@@ -499,6 +792,7 @@ function CameraController({
   localCam: CamConfig
   focusTarget: THREE.Vector3 | null
   camOverride: CamOverride | null
+  calibrateMode?: boolean
   onFocusDone?: () => void
   onCameraUpdate?: (pos: THREE.Vector3, target: THREE.Vector3) => void
 }) {
@@ -601,15 +895,15 @@ function CameraController({
       ref={controlsRef}
       enableDamping
       dampingFactor={0.08}
-      minPolarAngle={0.15}
-      maxPolarAngle={Math.PI * 0.48}
-      minDistance={0.4}
-      maxDistance={30}
+      minPolarAngle={calibrateMode ? 0.05 : 0.15}
+      maxPolarAngle={calibrateMode ? Math.PI * 0.85 : Math.PI * 0.48}
+      minDistance={calibrateMode ? 0.2 : 0.4}
+      maxDistance={calibrateMode ? 60 : 30}
       zoomSpeed={2.5}
       target={[0, 0, 0]}
-      enableZoom={false}
-      enablePan={false}
-      enableRotate={false}
+      enableZoom={!!calibrateMode}
+      enablePan={!!calibrateMode}
+      enableRotate={!!calibrateMode}
     />
   )
 }
@@ -637,6 +931,7 @@ interface TerrainSceneProps {
   localCam: CamConfig
   focusTarget: THREE.Vector3 | null
   camOverride: CamOverride | null
+  calibrateMode?: boolean
   onFocusDone?: () => void
   onCameraUpdate?: (pos: THREE.Vector3, target: THREE.Vector3) => void
   onSelectBridge: (bridge: Bridge) => void
@@ -645,10 +940,21 @@ interface TerrainSceneProps {
 
 export const SOUTH_SHIFT = 3.5 // 往南偏移纬度°（已确认定位 2026-06-08）
 
-function TerrainScene({ bridges, selectedBridge, viewMode, globalCam, localCam, focusTarget, camOverride, onFocusDone, onCameraUpdate, onSelectBridge, categoryColors }: TerrainSceneProps) {
+function TerrainScene({ bridges, selectedBridge, viewMode, globalCam, localCam, focusTarget, camOverride, calibrateMode, onFocusDone, onCameraUpdate, onSelectBridge, categoryColors }: TerrainSceneProps) {
   const [texture, setTexture] = useState<THREE.Texture | null>(null)
   const [loading, setLoading] = useState(true)
   const [hoveredBridgeId, setHoveredBridgeId] = useState<string | null>(null)
+  const { camera } = useThree()
+  const frustumRef = useRef(new THREE.Frustum())
+  const visibleIdsRef = useRef<Set<string>>(new Set())
+  const lastUpdateRef = useRef(0)
+  const [visibleBridgeIds, setVisibleBridgeIds] = useState<Set<string>>(new Set())
+  const [breathingIds, setBreathingIds] = useState<Set<string>>(new Set())
+  const breathingIdsRef = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    breathingIdsRef.current = breathingIds
+  }, [breathingIds])
 
   // 只加载平面地图图
   useEffect(() => {
@@ -672,16 +978,99 @@ function TerrainScene({ bridges, selectedBridge, viewMode, globalCam, localCam, 
     img.onerror = () => setLoading(false)
   }, [])
 
-  // 桥标记世界坐标（十七孔桥始终在最上层）
+  // 桥标记世界坐标（有模型→有线稿图→普通，按层级排序，后渲染的z-index更高）
+  const modelSet = useMemo(() => new Set(MODEL_BRIDGE_IDS), [])
+  const lineDrawingSet = useMemo(() => new Set(LINE_DRAWING_BRIDGE_IDS), [])
   const bridgeMarkers = useMemo(() => {
     if (!texture) return []
-    const list = bridges.map(bridge => ({
-      bridge,
-      pos: latLngToWorldPos(bridge.lat, bridge.lng, SOUTH_SHIFT),
-    }))
-    list.sort((a, b) => a.bridge.id === 'shiqikong' ? 1 : b.bridge.id === 'shiqikong' ? -1 : 0)
+    const list = bridges.map(bridge => {
+      const tier: 'model' | 'lineDrawing' | 'normal' = modelSet.has(bridge.id) ? 'model' : lineDrawingSet.has(bridge.id) ? 'lineDrawing' : 'normal'
+      return {
+        bridge,
+        pos: latLngToWorldPos(bridge.lat, bridge.lng, SOUTH_SHIFT),
+        tier,
+      }
+    })
+    // 普通 → 线稿图 → 模型（后渲染的在上层）
+    list.sort((a, b) => {
+      const order = { normal: 0, lineDrawing: 1, model: 2 }
+      return order[a.tier] - order[b.tier]
+    })
     return list
-  }, [bridges, texture])
+  }, [bridges, texture, modelSet, lineDrawingSet])
+
+  // 初始化时显示所有桥
+  useEffect(() => {
+    if (bridgeMarkers.length > 0 && visibleIdsRef.current.size === 0) {
+      const ids = new Set(bridgeMarkers.map(m => m.bridge.id))
+      visibleIdsRef.current = ids
+      setVisibleBridgeIds(ids)
+    }
+  }, [bridgeMarkers])
+
+  // 视锥体裁剪 + 空间聚类呼吸：每帧检测，但节流更新state（每100ms最多一次）
+  useFrame((_, delta) => {
+    if (!texture || bridgeMarkers.length === 0) return
+    lastUpdateRef.current += delta * 1000
+    if (lastUpdateRef.current < 100) return
+    lastUpdateRef.current = 0
+
+    camera.updateMatrixWorld()
+    frustumRef.current.setFromProjectionMatrix(
+      new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
+    )
+    const visible = new Set<string>()
+    for (const { bridge, pos, tier } of bridgeMarkers) {
+      const margin = tier === 'model' ? 4 : 2
+      const box = new THREE.Box3(
+        new THREE.Vector3(pos.x - margin, -1, pos.z - margin),
+        new THREE.Vector3(pos.x + margin, 2, pos.z + margin)
+      )
+      if (frustumRef.current.intersectsBox(box)) {
+        visible.add(bridge.id)
+      }
+    }
+
+    // 空间聚类呼吸：每个区域只选一个桥呼吸
+    // 1. 获取视野内桥按优先级排序（模型桥优先）
+    const visibleMarkers = bridgeMarkers
+      .filter(m => visible.has(m.bridge.id))
+      .sort((a, b) => {
+        const order = { model: 0, lineDrawing: 1, normal: 2 }
+        return order[a.tier] - order[b.tier]
+      })
+    // 2. 贪心选择：已选中的桥间距必须 >= 阈值
+    const BREATH_DIST_THRESHOLD = 12 // 单位：世界坐标
+    const breathSet = new Set<string>()
+    for (const m of visibleMarkers) {
+      let tooClose = false
+      for (const id of breathSet) {
+        const other = bridgeMarkers.find(bm => bm.bridge.id === id)
+        if (!other) continue
+        const dist = m.pos.distanceTo(other.pos)
+        if (dist < BREATH_DIST_THRESHOLD) {
+          tooClose = true
+          break
+        }
+      }
+      if (!tooClose) {
+        breathSet.add(m.bridge.id)
+      }
+    }
+
+    const prev = visibleIdsRef.current
+    const prevBreath = breathingIdsRef.current
+    const visibleChanged = prev.size !== visible.size || [...prev].some(id => !visible.has(id))
+    const breathChanged = prevBreath.size !== breathSet.size || [...prevBreath].some(id => !breathSet.has(id))
+    if (visibleChanged || breathChanged) {
+      if (visibleChanged) visibleIdsRef.current = visible
+      if (breathChanged) {
+        breathingIdsRef.current = breathSet
+        setBreathingIds(new Set(breathSet))
+      }
+      if (visibleChanged) setVisibleBridgeIds(new Set(visible))
+    }
+  })
 
   // 当前 hover 的桥对象
   const hoveredBridge = useMemo(() => {
@@ -710,27 +1099,33 @@ function TerrainScene({ bridges, selectedBridge, viewMode, globalCam, localCam, 
       {/* 平面地图 */}
       {texture && <FlatMap texture={texture} />}
 
-      {/* 桥标记点 */}
-      {bridgeMarkers.map(({ bridge, pos }) => (
-        <BridgeMarker
-          key={bridge.id}
-          bridge={bridge}
-          worldPos={pos}
-          isSelected={selectedBridge?.id === bridge.id}
-          isSpecial={bridge.id === 'shiqikong' || bridge.id === 'wuting' || bridge.id === 'chengyang-yongji'}
-          onClick={onSelectBridge}
-          onHoverEnter={() => setHoveredBridgeId(bridge.id)}
-          onHoverLeave={() => setHoveredBridgeId(null)}
-          categoryColor={categoryColors?.[bridge.type] ?? undefined}
-        />
-      ))}
+      {/* 桥标记点 - 只渲染视野内的 */}
+      {bridgeMarkers.map(({ bridge, pos, tier }) => {
+        const isVisible = visibleBridgeIds.has(bridge.id)
+        if (!isVisible) return null
+        return (
+          <BridgeMarker
+            key={bridge.id}
+            bridge={bridge}
+            worldPos={pos}
+            isSelected={selectedBridge?.id === bridge.id}
+            isSpecial={bridge.id === 'shiqikong' || bridge.id === 'wuting' || bridge.id === 'chengyang-yongji'}
+            tier={tier}
+            animate={breathingIds.has(bridge.id)}
+            onClick={onSelectBridge}
+            onHoverEnter={() => setHoveredBridgeId(bridge.id)}
+            onHoverLeave={() => setHoveredBridgeId(null)}
+            categoryColor={categoryColors?.[bridge.type] ?? undefined}
+          />
+        )
+      })}
 
       {/* hover 信息卡 — 独立 Html，最高 z-index */}
       {hoveredBridge && hoveredPos && (
         <HoverCard bridge={hoveredBridge} worldPos={hoveredPos} />
       )}
 
-      <CameraController viewMode={viewMode} globalCam={globalCam} localCam={localCam} focusTarget={focusTarget} camOverride={camOverride} onFocusDone={onFocusDone} onCameraUpdate={onCameraUpdate} />
+      <CameraController viewMode={viewMode} globalCam={globalCam} localCam={localCam} focusTarget={focusTarget} camOverride={camOverride} calibrateMode={calibrateMode} onFocusDone={onFocusDone} onCameraUpdate={onCameraUpdate} />
 
       <fogExp2 attach="fog" args={['#eef2ec', 0.04]} />
     </>
@@ -746,6 +1141,7 @@ interface Terrain3DProps {
   viewMode: 'global' | 'local'
   focusTarget: THREE.Vector3 | null
   camOverride: CamOverride | null
+  calibrateMode?: boolean
   onFocusDone?: () => void
   onCameraUpdate?: (pos: THREE.Vector3, target: THREE.Vector3) => void
   onSelectBridge: (bridge: Bridge) => void
@@ -756,7 +1152,7 @@ interface Terrain3DProps {
 const GLOBAL_CAM: CamConfig = { px: 0.61, py: 6.48, pz: 7.80, tx: -0.23, ty: -1.51, tz: 1.48 }
 const LOCAL_CAM: CamConfig  = { px: 0.80, py: 3.73, pz: 4.16, tx: 1.09,  ty: -0.14, tz: -0.54 }
 
-export default function Terrain3D({ bridges, selectedBridge, viewMode, focusTarget, camOverride, onFocusDone, onCameraUpdate, onSelectBridge, categoryColors }: Terrain3DProps) {
+export default function Terrain3D({ bridges, selectedBridge, viewMode, focusTarget, camOverride, calibrateMode, onFocusDone, onCameraUpdate, onSelectBridge, categoryColors }: Terrain3DProps) {
   const [globalCam] = useState<CamConfig>(GLOBAL_CAM)
   const [localCam] = useState<CamConfig>(LOCAL_CAM)
 

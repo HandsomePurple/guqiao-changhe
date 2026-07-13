@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* ═══ 实景图滑动提示动画 ═══ */
+@keyframes fadeBlink {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
 /* ═══ 汇文明朝体字体注册 ═══ */
 @font-face {
   font-family: '汇文明朝体';
@@ -813,7 +819,7 @@ html, body, #root {
   right: 320px;
   height: 100%;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.50);
+  background: rgba(255, 252, 245, 0.72);
   border: 1px solid rgba(211, 184, 133, 0.28);
   box-shadow:
     0 0 80px rgba(211, 184, 133, 0.1),
@@ -920,6 +926,27 @@ html, body, #root {
   pointer-events: none;
 }
 
+/* ═══ 场景图待更新占位 ═══ */
+.bridge-poster-placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(244, 239, 229, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+
+.bridge-poster-placeholder-text {
+  font-family: '汇文明朝体', serif;
+  font-size: 16px;
+  letter-spacing: 4px;
+  color: rgba(139, 115, 85, 0.4);
+}
+
 /* 卡片内 3D Canvas — 直接铺满卡片，不留边距 */
 .bridge-poster-canvas-fill {
   position: absolute !important;
@@ -1011,20 +1038,145 @@ html, body, #root {
   pointer-events: none;
 }
 
-/* 内容区透明部分不拦截点击，但子按钮仍可交互 */
-.bridge-poster-content .bridge-poster-keywords,
-.bridge-poster-content .bridge-poster-detail {
-  pointer-events: auto;
-}
-
-/* ═══ 关键词标签栏 — 卡片内部（竖版排版） ═══ */
-.bridge-poster-keywords {
+/* ═══ 右侧文字信息区 — 直接内容展示 ═══ */
+.bridge-info-content {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 20px;
-  pointer-events: auto;
+  gap: 16px;
+}
+
+.bridge-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bridge-info-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #8B7355;
+  font-family: '汇文明朝体', serif;
+  letter-spacing: 1px;
+}
+
+.bridge-info-meta-divider {
+  color: rgba(211, 184, 133, 0.4);
+}
+
+.bridge-info-title {
+  font-family: '汇文明朝体', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #8B6D3E;
+  letter-spacing: 2px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(211, 184, 133, 0.18);
+}
+
+.bridge-info-text {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #6B5E4E;
+  text-align: justify;
+}
+
+.bridge-info-pending {
+  color: rgba(139, 115, 85, 0.4);
+  font-style: italic;
+}
+
+.bridge-info-features {
+  margin: 0;
+  padding-left: 16px;
+  list-style: none;
+}
+
+.bridge-info-features li {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #6B5E4E;
+  position: relative;
+  padding-left: 4px;
+}
+
+.bridge-info-features li::before {
+  content: '·';
+  position: absolute;
+  left: -10px;
+  color: rgba(211, 184, 133, 0.6);
+  font-weight: bold;
+}
+
+.bridge-info-poem {
+  margin-bottom: 8px;
+}
+
+.bridge-info-poem-title {
+  font-family: '汇文明朝体', serif;
+  font-size: 14px;
+  color: #8B6D3E;
+  margin-bottom: 4px;
+}
+
+.bridge-info-poem-lines {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #6B5E4E;
+  font-style: italic;
+}
+
+.bridge-info-spot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.bridge-info-spot-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #8B6D3E;
+}
+
+.bridge-info-spot-desc {
+  font-size: 14px;
+  color: #6B5E4E;
+}
+
+.bridge-info-spot-tip {
+  font-size: 13px;
+  color: rgba(139, 115, 85, 0.5);
+}
+
+.bridge-info-tourism {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bridge-info-tourism-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bridge-info-tourism-label {
+  font-size: 14px;
+  color: #8B6D3E;
+  font-family: '汇文明朝体', serif;
+  letter-spacing: 1px;
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+.bridge-info-tourism-value {
+  font-size: 14px;
+  color: #6B5E4E;
 }
 
 /* ═══ Hover 卡片淡入动画 ═══ */
@@ -1125,7 +1277,7 @@ html, body, #root {
 /* ═══ 左侧场景图底部控制栏 ═══ */
 .bridge-poster-left-controls {
   position: absolute;
-  bottom: 16px;
+  bottom: 32px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
@@ -1165,6 +1317,148 @@ html, body, #root {
   box-shadow:
     0 0 18px rgba(201, 168, 130, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* ═══ 模型桥交互引导浮层 ═══ */
+/* 桥体上方小气泡：扫描/拖拽阶段 */
+.bridge-guide-bubble {
+  position: absolute;
+  z-index: 50;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: rgba(20, 16, 10, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 14px;
+  animation: guideBubbleIn 0.4s ease both;
+}
+
+.bridge-guide-bubble--top {
+  top: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.bridge-guide-bubble-text {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 11px;
+  color: rgba(255, 248, 235, 0.92);
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+}
+
+.bridge-guide-bubble-arrow-down {
+  font-size: 10px;
+  color: rgba(255, 220, 160, 0.85);
+  line-height: 1;
+  animation: guideArrowBounceDown 1.2s ease-in-out infinite;
+}
+
+@keyframes guideBubbleIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes guideArrowBounceDown {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+
+/* 图标上方引导：手电筒/闪电/重置（统一组件，按 modifier 微调位置） */
+.bridge-guide-icon-tooltip {
+  position: absolute;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  animation: guideIconIn 0.4s ease both;
+}
+
+.bridge-guide-icon-tooltip--flashlight {
+  bottom: 74px;
+  left: 38%;  /* 手电筒是三个按钮的第一个，靠近左中 */
+  transform: translateX(-50%);
+}
+.bridge-guide-icon-tooltip--lightning {
+  bottom: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.bridge-guide-icon-tooltip--reset {
+  bottom: 74px;
+  left: 62%;  /* 第三个按钮，靠右 */
+  transform: translateX(-50%);
+}
+
+.bridge-guide-icon-tooltip-arrow {
+  font-size: 12px;
+  color: #D4A853;
+  line-height: 1;
+  animation: guideArrowBounceDown 1.2s ease-in-out infinite;
+}
+
+.bridge-guide-icon-tooltip-text {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 11px;
+  color: #D4A853;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+@keyframes guideIconIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* 实景图滑动引导 */
+.bridge-guide-reality-hint {
+  position: absolute;
+  bottom: 80px;
+  right: 20px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 6px;
+  pointer-events: none;
+  animation: guideRealityIn 0.4s ease both;
+}
+
+.bridge-guide-reality-arrow {
+  font-size: 14px;
+  color: #D4A853;
+  line-height: 1;
+  animation: guideArrowRight 1.5s ease-in-out infinite;
+}
+
+.bridge-guide-reality-text {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 11px;
+  color: rgba(255, 248, 240, 0.9);
+  letter-spacing: 1px;
+}
+
+@keyframes guideRealityIn {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes guideArrowRight {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
 }
 
 /* ═══ 底部桥型筛选栏按钮 — 精致关键词风格 ═══ */
@@ -1863,6 +2157,23 @@ html, body, #root {
     box-shadow:
       0 0 14px rgba(255, 220, 140, 0.9),
       0 0 32px rgba(255, 220, 140, 0.5);
+  }
+}
+
+@keyframes verticalScanlinePulse {
+  from { 
+    box-shadow:
+      0 0 8px rgba(255, 220, 140, 0.7),
+      0 0 20px rgba(255, 220, 140, 0.35),
+      -2px 0 6px rgba(255, 240, 200, 0.2),
+      2px 0 6px rgba(255, 240, 200, 0.2);
+  }
+  to {
+    box-shadow:
+      0 0 14px rgba(255, 220, 140, 0.9),
+      0 0 32px rgba(255, 220, 140, 0.5),
+      -2px 0 10px rgba(255, 240, 200, 0.3),
+      2px 0 10px rgba(255, 240, 200, 0.3);
   }
 }
 
