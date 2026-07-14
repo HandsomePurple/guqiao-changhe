@@ -5,7 +5,7 @@ import { viteSingleFile } from 'vite-plugin-singlefile'
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), viteSingleFile()],
-  base: './',
+  base: '/guqiao-changhe/',
   server: {
     port: 5175,
     strictPort: true,
