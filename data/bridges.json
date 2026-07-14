@@ -1,0 +1,250 @@
+[
+  {
+    "id": "zhaozhou-bridge",
+    "name": "赵州桥",
+    "alias": "安济桥",
+    "location": {
+      "province": "河北省",
+      "city": "赵县",
+      "coordinates": [114.76, 37.70]
+    },
+    "type": "arch",
+    "dimensions": {
+      "length": 64.4,
+      "width": 9.6,
+      "height": 7.23,
+      "span": 37.02
+    },
+    "builtYear": 605,
+    "renovationYears": [1955, 1984],
+    "culture": {
+      "stories": [
+        "鲁班造桥传说:相传赵州桥是鲁班一夜之间建造而成,张果老骑驴过桥时留下驴蹄印",
+        "张果老倒骑驴的民间故事:考验鲁班技艺的传说流传千年"
+      ],
+      "historicalChanges": [
+        "隋代始建,距今已有1400多年历史",
+        "1955年进行全面修缮,保持原有风貌",
+        "1984年再次维护加固"
+      ],
+      "protectionLevel": "全国重点文物保护单位",
+      "tourismInfo": "国家AAAA级旅游景区"
+    },
+    "technology": {
+      "structuralFeatures": [
+        "敞肩拱结构:在大拱两肩各开两个小拱,首创世界桥梁史",
+        "单孔石拱桥:跨度达37.02米",
+        "28道拱圈并列砌筑:增强整体稳定性"
+      ],
+      "materials": ["石灰岩", "铁榫"],
+      "innovations": [
+        "世界现存最早的敞肩石拱桥",
+        "首创敞肩拱结构形式,减轻桥身自重",
+        "28道拱圈并列砌筑工艺"
+      ]
+    },
+    "media": {
+      "sceneImage": "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=ancient%20stone%20arch%20bridge%20over%20river%2C%20traditional%20Chinese%20architecture%2C%20serene%20water%2C%20historical%20monument%2C%20morandi%20color%20palette&image_size=landscape_16_9",
+      "model3d": "/assets/models/zhaozhou-bridge.glb",
+      "lineDrawing": "/assets/images/line-drawings/zhaozhou-bridge.svg"
+    }
+  },
+  {
+    "id": "luoyang-bridge",
+    "name": "洛阳桥",
+    "alias": "万安桥",
+    "location": {
+      "province": "福建省",
+      "city": "泉州市",
+      "coordinates": [118.67, 24.90]
+    },
+    "type": "beam",
+    "dimensions": {
+      "length": 834,
+      "width": 7,
+      "height": 3.5,
+      "span": 834
+    },
+    "builtYear": 1053,
+    "renovationYears": [1993, 1998],
+    "culture": {
+      "stories": [
+        "蔡襄造桥传说:北宋名臣蔡襄主持修建,历经七年完工",
+        "牡蛎固基故事:种植牡蛎以加固桥基的独特方法"
+      ],
+      "historicalChanges": [
+        "北宋嘉祐年间建成,历时七年",
+        "1993年修缮保护",
+        "1998年再次维护"
+      ],
+      "protectionLevel": "全国重点文物保护单位",
+      "tourismInfo": "泉州历史文化名片"
+    },
+    "technology": {
+      "structuralFeatures": [
+        "筏型基础:首创筏型基础结构",
+        "牡蛎固基:利用牡蛎繁殖加固桥基",
+        "石梁桥:福建第一座大型石梁桥"
+      ],
+      "materials": ["花岗岩", "牡蛎"],
+      "innovations": [
+        "世界首创筏型基础桥梁建造技术",
+        "生物工程与建筑工程结合的典范",
+        "中国现存最早的跨海石梁桥"
+      ]
+    },
+    "media": {
+      "sceneImage": "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=ancient%20stone%20beam%20bridge%20crossing%20sea%2C%20traditional%20Chinese%20architecture%2C%20ocean%20waves%2C%20morandi%20colors%2C%20historical&image_size=landscape_16_9",
+      "model3d": "/assets/models/luoyang-bridge.glb",
+      "lineDrawing": "/assets/images/line-drawings/luoyang-bridge.svg"
+    }
+  },
+  {
+    "id": "fengyu-bridge",
+    "name": "风雨桥",
+    "alias": "程阳永济桥",
+    "location": {
+      "province": "广西省",
+      "city": "三江县",
+      "coordinates": [109.58, 25.78]
+    },
+    "type": "covered",
+    "dimensions": {
+      "length": 77.76,
+      "width": 3.75,
+      "height": 11.5,
+      "span": 77.76
+    },
+    "builtYear": 1912,
+    "renovationYears": [1982],
+    "culture": {
+      "stories": [
+        "侗族建筑瑰宝:侗族人民集体智慧的结晶",
+        "风雨同舟寓意:桥名寄托美好愿望"
+      ],
+      "historicalChanges": [
+        "民国元年建成",
+        "1982年修缮维护"
+      ],
+      "protectionLevel": "全国重点文物保护单位",
+      "tourismInfo": "侗族文化象征"
+    },
+    "technology": {
+      "structuralFeatures": [
+        "木石结构:不用一钉一铆的精湛技艺",
+        "廊桥设计:桥上建廊可避风雨",
+        "多层檐塔:独特侗族建筑风格"
+      ],
+      "materials": ["木材", "石材"],
+      "innovations": [
+        "不用一钉一铆的全木结构",
+        "侗族建筑技艺的代表作品",
+        "集桥、廊、亭于一体的多功能桥梁"
+      ]
+    },
+    "media": {
+      "sceneImage": "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20covered%20bridge%20in%20Guangxi%2C%20Dong%20ethnic%20architecture%2C%20wooden%20structure%2C%20multi-tiered%20roof%2C%20morandi%20palette&image_size=landscape_16_9",
+      "model3d": "/assets/models/fengyu-bridge.glb",
+      "lineDrawing": "/assets/images/line-drawings/fengyu-bridge.svg"
+    }
+  },
+  {
+    "id": "jinjiang-bridge",
+    "name": "锦江桥",
+    "alias": "锦江浮桥",
+    "location": {
+      "province": "四川省",
+      "city": "成都市",
+      "coordinates": [104.06, 30.67]
+    },
+    "type": "floating",
+    "dimensions": {
+      "length": 120,
+      "width": 4.5,
+      "height": 2,
+      "span": 120
+    },
+    "builtYear": 1840,
+    "renovationYears": [],
+    "culture": {
+      "stories": [
+        "成都水上交通要道:连接两岸的重要通道",
+        "浮桥变迁见证城市发展"
+      ],
+      "historicalChanges": [
+        "清代建成浮桥",
+        "见证成都城市发展历程"
+      ],
+      "protectionLevel": "市级文物保护单位",
+      "tourismInfo": "成都历史文化遗迹"
+    },
+    "technology": {
+      "structuralFeatures": [
+        "浮桥结构:船只相连形成桥面",
+        "可拆卸设计:根据水位调节",
+        "木质桥面铺设"
+      ],
+      "materials": ["木船", "木板", "铁链"],
+      "innovations": [
+        "适应性强的浮桥设计",
+        "灵活应对水位变化",
+        "便捷的水上交通解决方案"
+      ]
+    },
+    "media": {
+      "sceneImage": "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=floating%20bridge%20on%20river%2C%20boats%20connected%20forming%20bridge%2C%20traditional%20Chinese%20water%20transportation%2C%20serene%20water%2C%20morandi&image_size=landscape_16_9",
+      "model3d": "/assets/models/jinjiang-bridge.glb",
+      "lineDrawing": "/assets/images/line-drawings/jinjiang-bridge.svg"
+    }
+  },
+  {
+    "id": "hong-bridge",
+    "name": "虹桥",
+    "alias": "张择端虹桥",
+    "location": {
+      "province": "河南省",
+      "city": "开封市",
+      "coordinates": [114.35, 34.79]
+    },
+    "type": "arch",
+    "dimensions": {
+      "length": 30,
+      "width": 8,
+      "height": 6,
+      "span": 30
+    },
+    "builtYear": 1100,
+    "renovationYears": [],
+    "culture": {
+      "stories": [
+        "清明上河图中的虹桥:《清明上河图》中的著名场景",
+        "宋代市井繁华见证:桥上人流如织,繁华景象"
+      ],
+      "historicalChanges": [
+        "北宋时期建造",
+        "《清明上河图》经典场景",
+        "见证宋代开封繁华"
+      ],
+      "protectionLevel": "历史文化象征",
+      "tourismInfo": "清明上河园景区复原"
+    },
+    "technology": {
+      "structuralFeatures": [
+        "编木拱桥:独特的木拱结构",
+        "无柱设计:桥下船只畅通无阻",
+        "承重分布巧妙"
+      ],
+      "materials": ["木材", "竹编"],
+      "innovations": [
+        "中国古代编木拱桥技术代表",
+        "巧妙的无柱拱形结构",
+        "《清明上河图》中的建筑典范"
+      ]
+    },
+    "media": {
+      "sceneImage": "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=traditional%20wooden%20arch%20bridge%20from%20Song%20dynasty%2C%20Riverside%20Scene%20at%20Qingming%20 Festival%2C%20busy%20market%20scene%2C%20morandi%20colors&image_size=landscape_16_9",
+      "model3d": "/assets/models/hong-bridge.glb",
+      "lineDrawing": "/assets/images/line-drawings/hong-bridge.svg"
+    }
+  }
+]
