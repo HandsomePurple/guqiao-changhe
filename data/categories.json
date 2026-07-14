@@ -1,0 +1,32 @@
+[
+  {
+    "id": "arch",
+    "name": "拱桥",
+    "icon": "arch",
+    "description": "以拱形结构为主要承重体系的桥梁,中国古代拱桥技术精湛"
+  },
+  {
+    "id": "beam",
+    "name": "梁桥",
+    "icon": "beam",
+    "description": "以梁作为主要承重构件的桥梁,结构简洁实用"
+  },
+  {
+    "id": "suspension",
+    "name": "索桥",
+    "icon": "suspension",
+    "description": "以缆索或链索作为主要承重构件的桥梁,适应山区地形"
+  },
+  {
+    "id": "floating",
+    "name": "浮桥",
+    "icon": "floating",
+    "description": "以船只或浮箱连接形成的桥梁,灵活适应水位变化"
+  },
+  {
+    "id": "covered",
+    "name": "廊桥",
+    "icon": "covered",
+    "description": "桥上建有廊屋的桥梁,既可通行又可遮风避雨"
+  }
+]
