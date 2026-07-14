@@ -3,16 +3,9 @@ import type { Bridge } from './types/bridge'
 import { bridges } from './data/bridges'
 import HomePage from './components/Home/HomePage'
 import PanoramaViewer from './components/Panorama/PanoramaViewer'
-// @ts-ignore — 仅用于调试测试
-import TestWutingPage from './components/TestWutingPage'
 import './index.css'
 
-const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
-const TEST_MODE = params.get('test')
-
 export default function App() {
-  // 独立测试模式：访问 ?test=wuting
-  if (TEST_MODE === 'wuting') return <TestWutingPage />
 
   const [selectedBridge, setSelectedBridge] = useState<Bridge | null>(null)
   const [showPanorama, setShowPanorama] = useState(false)
